@@ -1,12 +1,17 @@
 # ============================================================
 # Script: ida_first_pass.r
-# Purpose: D4 -- the three-window (pre/during/post) x firm first-pass
-#          comparison. This is CLAUDE.md Design 2 (simple before/after in
-#          affected zones, generalized to citywide firm totals here): no
-#          control for citywide time shocks, seasonality, or the Labor Day
-#          holiday. Report as a DESCRIPTIVE BENCHMARK ONLY -- never as a
-#          causal estimate. The causal work (within-city spatial DiD) needs
-#          the weather panel and is out of scope for this script.
+# Purpose: D4 -- the three-window (pre_matched/during/post_matched) x firm
+#          first-pass comparison. This is CLAUDE.md Design 2 (simple
+#          before/after in affected zones, generalized to citywide firm
+#          totals here): no control for citywide time shocks or seasonality.
+#          Report as a DESCRIPTIVE BENCHMARK ONLY -- never as a causal
+#          estimate. The causal work (within-city spatial DiD) needs the
+#          weather panel and is out of scope for this script.
+#          pre_matched/post_matched replace the old full-calendar-day
+#          pre/post comparison: same clock-hour window as the storm (9h),
+#          replicated across 14 days 2-4 weeks before/after, pooled. This
+#          isolates the storm's effect on that time-of-day slice instead of
+#          conflating it with ordinary daytime-vs-evening demand patterns.
 # Inputs: clean_data/firm_window_aggregates.parquet
 #         clean_data/firm_day_aggregates.parquet
 #         clean_data/ida_event_windows.json
@@ -44,18 +49,18 @@ cat("\nstr(day_agg$date):\n")
 str(day_agg$date)
 
 stopifnot(is.numeric(window_agg$n_trips))
-stopifnot(all(c("pre", "during", "post") %in% window_agg$window))
+stopifnot(all(c("pre_matched", "during", "post_matched") %in% window_agg$window))
 
 # ------------------------------------------------------------------
 # Table: firms in columns, measures in rows, three window blocks
 # ------------------------------------------------------------------
 
 platform_order <- c("Uber", "Lyft", "Via", "All")
-window_order <- c("pre", "during", "post")
+window_order <- c("pre_matched", "during", "post_matched")
 window_labels <- c(
-  pre = "Pre-Ida (14 days)",
+  pre_matched = "Pre-Ida (matched hrs, 2-4 wks before)",
   during = "During Ida (9 hours)",
-  post = "Post-Ida (14 days)"
+  post_matched = "Post-Ida (matched hrs, 2-4 wks after)"
 )
 
 fmt_dollar <- function(x) sprintf("$%.2f", x)
@@ -75,7 +80,7 @@ rate_rows <- list(
   list(label = "Fare per trip",               col = "fare_per_trip",             fmt = fmt_dollar),
   list(label = "Fare per mile",               col = "fare_per_mile",             fmt = fmt_dollar),
   list(label = "Fare per minute",             col = "fare_per_minute",           fmt = fmt_dollar),
-  list(label = "Profit (margin) per trip",    col = "profit_per_trip",           fmt = fmt_dollar),
+  list(label = "Platform margin per trip",    col = "platform_margin_per_trip",  fmt = fmt_dollar),
   list(label = "Driver share (ex-tips)",      col = "driver_share",              fmt = fmt_pct),
   list(label = "Driver share (incl. tips)",   col = "driver_share_incl_tips",    fmt = fmt_pct),
   list(label = "Mean trip distance (mi)",     col = "mean_trip_miles",           fmt = function(x) fmt_num(x, 2)),
@@ -132,19 +137,45 @@ peak_hour <- windows_json$peak_hour_local
 threshold <- windows_json$storm_threshold_in
 during_start <- windows_json$windows$during$start
 during_end <- windows_json$windows$during$end
-pre_start <- windows_json$windows$pre$start
-pre_end <- windows_json$windows$pre$end
-post_start <- windows_json$windows$post$start
-post_end <- windows_json$windows$post$end
+n_replicates <- windows_json$matched_window_params$n_replicates
+offset_min <- windows_json$matched_window_params$offset_min_days
+offset_max <- windows_json$matched_window_params$offset_max_days
+
+# JSON timestamps carry a "-04:00" offset suffix that base R's as.POSIXct()
+# silently fails to parse (it falls back to date-only, truncating the time
+# of day with no warning -- confirmed by inspection, not just assumption).
+# Strip the offset and parse as naive local wall-clock instead, matching
+# the convention already used in clean_hvfhv.py's load_windows(): correct
+# because the whole span sits inside EDT with no DST transition.
+parse_local <- function(iso) {
+  as.POSIXct(sub("[+-][0-9]{2}:[0-9]{2}$", "", iso),
+             format = "%Y-%m-%dT%H:%M:%S", tz = "America/New_York")
+}
+
+pre_matched_earliest <- min(parse_local(windows_json$pre_matched_windows$start))
+pre_matched_latest <- max(parse_local(windows_json$pre_matched_windows$end))
+post_matched_earliest <- min(parse_local(windows_json$post_matched_windows$start))
+post_matched_latest <- max(parse_local(windows_json$post_matched_windows$end))
+during_hours <- as.numeric(parse_local(during_end) - parse_local(during_start), units = "hours")
 
 table_notes <- paste0(
-  "Descriptive benchmark only (CLAUDE.md Design 2) -- no control for citywide time shocks, ",
-  "seasonality, or the Labor Day holiday; NOT a causal estimate. Windows derived from ",
-  "observed ASOS rainfall (threshold ", threshold, " in/hr), never hardcoded: pre ", pre_start,
-  " to ", pre_end, "; during ", during_start, " to ", during_end,
-  " (peak hourly rain at ", peak_hour, "); post ", post_start, " to ", post_end,
-  ". US Labor Day (2021-09-06) falls inside the post window. ",
-  "Platform margin = base\\_passenger\\_fare - driver\\_pay: firm gross take per trip, ",
+  "Descriptive benchmark only (CLAUDE.md Design 2) -- no control for citywide time shocks or ",
+  "seasonality; NOT a causal estimate. Windows derived from observed ASOS rainfall (threshold ",
+  threshold, " in/hr), never hardcoded: during ", during_start, " to ", during_end,
+  " (peak hourly rain at ", peak_hour, "). Pre-Ida and Post-Ida are TIME-OF-DAY-MATCHED windows: ",
+  "the same ", during_hours,
+  "-hour clock-time span as the During-Ida window, replicated on ", n_replicates,
+  " days each side at offsets of ", offset_min, "-", offset_max,
+  " days before/after the storm, then pooled -- NOT the full-calendar-day pre/post comparison ",
+  "used in earlier drafts of this table. This isolates the storm's effect on that specific ",
+  "time-of-day slice instead of conflating it with ordinary daytime-vs-evening demand patterns. ",
+  "Pre-Ida matched range: ", format(pre_matched_earliest, "%Y-%m-%d %H:%M"), " to ",
+  format(pre_matched_latest, "%Y-%m-%d %H:%M"), ". Post-Ida matched range: ",
+  format(post_matched_earliest, "%Y-%m-%d %H:%M"), " to ", format(post_matched_latest, "%Y-%m-%d %H:%M"),
+  ". Neither matched range crosses a federal holiday (US Labor Day 2021-09-06 falls between them, ",
+  "outside both). Ratio/rate measures are pooled across the ", n_replicates,
+  " replicate windows and computed as ratios of sums, not means of ratios, per this project's ",
+  "convention. Platform margin = base\\_passenger\\_fare - driver\\_pay: firm gross take per trip, ",
   "NOT accounting profit -- no insurance, incentives, marketing, or overhead costs are ",
   "netted out. Surcharges the firm collects and remits (tolls, Black Car Fund, sales tax, ",
   "congestion surcharge, airport fee) sit on top of the fare and are never deducted from ",
@@ -155,8 +186,8 @@ table_notes <- paste0(
   "and is omitted; Via is a small share of trips (see docs/data\\_introduction.md) and its ",
   "per-firm statistics are noisy. All comparisons above the raw-total block are per-day ",
   "(or per-trip); the raw-total block is shown separately because the during window (9 ",
-  "hours) is far shorter than the 14-day pre/post windows, so raw totals are not comparable ",
-  "across windows on their own."
+  "hours) is far shorter than the pooled 5.25-day matched windows, so raw totals are not ",
+  "comparable across windows on their own."
 )
 
 kbl_tex <- full_df %>%
@@ -164,12 +195,12 @@ kbl_tex <- full_df %>%
       caption = "Firm x window first-pass comparison (descriptive benchmark)",
       label = "firm_window_first_pass") %>%
   kable_styling(latex_options = c("hold_position", "scale_down")) %>%
-  pack_rows("Per-day / rate measures -- Pre-Ida", 1, 14) %>%
+  pack_rows("Per-day / rate measures -- Pre-Ida (matched hrs)", 1, 14) %>%
   pack_rows("Per-day / rate measures -- During Ida", 15, 28) %>%
-  pack_rows("Per-day / rate measures -- Post-Ida", 29, 42) %>%
-  pack_rows("Raw totals -- Pre-Ida (NOT comparable across windows, see notes)", 43, 45) %>%
+  pack_rows("Per-day / rate measures -- Post-Ida (matched hrs)", 29, 42) %>%
+  pack_rows("Raw totals -- Pre-Ida (matched hrs) (NOT comparable across windows, see notes)", 43, 45) %>%
   pack_rows("Raw totals -- During Ida (NOT comparable across windows, see notes)", 46, 48) %>%
-  pack_rows("Raw totals -- Post-Ida (NOT comparable across windows, see notes)", 49, 51) %>%
+  pack_rows("Raw totals -- Post-Ida (matched hrs) (NOT comparable across windows, see notes)", 49, 51) %>%
   footnote(general = table_notes, threeparttable = TRUE, escape = FALSE)
 
 dir.create(dirname(TABLE_OUT), showWarnings = FALSE, recursive = TRUE)
@@ -184,19 +215,19 @@ cat(sprintf("Wrote %s\n", TABLE_OUT))
 # Figure: small multiples, daily series by platform, storm window shaded
 # ------------------------------------------------------------------
 
-during_start_dt <- as.POSIXct(during_start, tz = "America/New_York")
-during_end_dt <- as.POSIXct(during_end, tz = "America/New_York")
+during_start_dt <- parse_local(during_start)
+during_end_dt <- parse_local(during_end)
 
 day_agg <- day_agg %>% filter(platform != "All")
 day_agg$date <- as.Date(day_agg$date)
 
 measure_specs <- list(
-  list(col = "n_trips", label = "Trips per day"),
-  list(col = "revenue_passenger", label = "Revenue per day ($)"),
+  list(col = "n_trips", label = "Trips per 9-hour period"),
+  list(col = "revenue_passenger", label = "Revenue per 9-hour period ($)"),
   list(col = "fare_per_mile", label = "Fare per mile ($)"),
   list(col = "mean_trip_miles", label = "Mean trip distance (mi)"),
-  list(col = "platform_margin", label = "Platform margin per day ($)"),
-  list(col = "driver_share", label = "Driver share (ex-tips)")
+  list(col = "driver_share", label = "Driver share (ex-tips)"),
+  list(col = "platform_margin_per_trip", label = "Platform margin per trip ($)")
 )
 
 long_list <- lapply(measure_specs, function(m) {
@@ -210,18 +241,65 @@ long_list <- lapply(measure_specs, function(m) {
 long_df <- do.call(rbind, long_list)
 long_df$measure <- factor(long_df$measure, levels = sapply(measure_specs, function(m) m$label))
 
+# Each point in day_agg is now a day-ANCHORED 9-hour window (17:00-02:00
+# local, the same clock-hour span as During-Ida), not a full calendar day --
+# see build_firm_window_aggregates.py. During-Ida's own window IS that
+# anchor formula applied to 2021-09-01 (During-Ida = [09-01 17:00, 09-02
+# 02:00)), so it shows up as a single point at that date rather than
+# spanning two dates; shade just that one date's column accordingly.
+during_anchor_date <- as.Date(during_start_dt)
+
+# Second comparison band: Tropical Storm Henri. Verified against the same
+# ASOS station data used to derive Ida's window (raw_data/weather/asos/
+# asos_nyc_2021.csv, max p01i across KNYC/KLGA/KJFK/KEWR, local time) -- NOT
+# hardcoded from memory. Peak hourly rain in the Aug 19-23 span: 1.94 in at
+# 2021-08-21 23:00 local, which falls inside the [17:00, next-day 02:00)
+# anchor window for 2021-08-21 -- the same clock-hour span as During-Ida, so
+# it plots as a single date exactly like the Ida band. A second, more
+# sustained but lower-intensity round of rain fell 2021-08-22 07:00-16:00
+# (daytime); it does not appear as its own shaded date because it falls
+# entirely outside every 9-hour evening/overnight window plotted here.
+henri_anchor_date <- as.Date("2021-08-21")
+
+storm_events <- data.frame(
+  event = factor(c("Tropical Storm Henri", "Hurricane Ida"),
+                  levels = c("Tropical Storm Henri", "Hurricane Ida")),
+  xmin = c(henri_anchor_date, during_anchor_date) - 0.5,
+  xmax = c(henri_anchor_date, during_anchor_date) + 0.5
+)
+
+fig_caption_raw <- paste0(
+  "Each point is a 9-hour evening/overnight window (17:00-02:00 local, the same ",
+  "clock-hours as During-Ida), anchored to that calendar date -- not a full ",
+  "calendar day -- so every panel compares like time-of-day slices throughout. ",
+  "Shaded columns: Hurricane Ida (2021-09-01 17:00 to 2021-09-02 02:00 local) and ",
+  "Tropical Storm Henri (2021-08-21 17:00 to 2021-08-22 02:00 local, peak hourly rain ",
+  "1.94in at 23:00 -- Henri's rain continued into daytime 2021-08-22, outside the ",
+  "9-hour windows shown here). Platform margin = base_passenger_fare - driver_pay ",
+  "(firm gross take per trip, not accounting profit). Descriptive benchmark, not a ",
+  "causal estimate."
+)
+# ggplot only breaks plot.caption on literal "\n" -- it does not auto-wrap
+# long strings to the plot width, so a caption this long must be pre-wrapped
+# or it silently overflows past the bottom of the saved image.
+fig_caption <- paste(strwrap(fig_caption_raw, width = 130), collapse = "\n")
+
 p <- ggplot(long_df, aes(x = date, y = value, color = platform)) +
-  annotate("rect", xmin = as.Date(during_start_dt), xmax = as.Date(during_end_dt) + 1,
-           ymin = -Inf, ymax = Inf, fill = "red", alpha = 0.12) +
+  geom_rect(data = storm_events, inherit.aes = FALSE,
+            aes(xmin = xmin, xmax = xmax, fill = event),
+            ymin = -Inf, ymax = Inf, alpha = 0.15) +
+  scale_fill_manual(values = c("Tropical Storm Henri" = "blue", "Hurricane Ida" = "red"),
+                     name = "Storm event") +
   geom_line() +
   geom_point(size = 0.8) +
   facet_wrap(~measure, scales = "free_y", ncol = 2) +
-  labs(x = NULL, y = NULL, color = "Platform",
-       caption = "Shaded band: during-Ida window (9 hours, spans parts of 2021-09-01/09-02). Descriptive benchmark, not a causal estimate.") +
+  labs(x = NULL, y = NULL, color = "Platform", caption = fig_caption) +
   theme_bw() +
-  theme(legend.position = "top", axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(legend.position = "top", axis.text.x = element_text(angle = 45, hjust = 1),
+        plot.caption = element_text(size = 7, hjust = 0, lineheight = 1.2),
+        plot.margin = margin(t = 5.5, r = 5.5, b = 11, l = 5.5))
 
-ggsave(FIG_OUT, plot = p, width = 9, height = 8, dpi = 300)
+ggsave(FIG_OUT, plot = p, width = 9, height = 9, dpi = 300)
 cat(sprintf("Wrote %s\n", FIG_OUT))
 
 # ------------------------------------------------------------------
@@ -229,14 +307,14 @@ cat(sprintf("Wrote %s\n", FIG_OUT))
 # ------------------------------------------------------------------
 
 cat("\n--- Sanity checks ---\n")
-pre_all <- window_agg %>% filter(window == "pre", platform == "All")
+pre_all <- window_agg %>% filter(window == "pre_matched", platform == "All")
 during_all <- window_agg %>% filter(window == "during", platform == "All")
-post_all <- window_agg %>% filter(window == "post", platform == "All")
+post_all <- window_agg %>% filter(window == "post_matched", platform == "All")
 
-cat(sprintf("Pre-window profit_per_trip: $%.2f (expect ~$5.24)\n", pre_all$profit_per_trip))
-cat(sprintf("Pre-window driver_share: %.3f (expect ~0.79)\n", pre_all$driver_share))
-cat(sprintf("Pre-window share_margin_negative: %.2f%% (expect ~18%%)\n", 100 * pre_all$share_margin_negative))
-cat(sprintf("Citywide trips_per_day, pre/during/post: %.0f / %.0f / %.0f (expect hundreds of thousands)\n",
+cat(sprintf("Pre-matched-window platform_margin_per_trip: $%.2f (old full-day pre was ~$5.24 -- this is an evening/overnight-only population, may genuinely differ)\n", pre_all$platform_margin_per_trip))
+cat(sprintf("Pre-matched-window driver_share: %.3f (old full-day pre was ~0.79)\n", pre_all$driver_share))
+cat(sprintf("Pre-matched-window share_margin_negative: %.2f%% (old full-day pre was ~18%%)\n", 100 * pre_all$share_margin_negative))
+cat(sprintf("Citywide trips_per_day, pre_matched/during/post_matched: %.0f / %.0f / %.0f (expect hundreds of thousands)\n",
             pre_all$trips_per_day, during_all$trips_per_day, post_all$trips_per_day))
 
 # Per NOTE: do not flag any change for its sign -- both revenue directions

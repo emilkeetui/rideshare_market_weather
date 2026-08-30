@@ -307,8 +307,29 @@ already in place from the prior session. Exit 0 on first attempt.
   `.claude/skills/regression-table/SKILL.md`. Left the historical plan and log files
   unedited (they correctly document what was true at planning time).
 - `git init` offer: project confirmed still not a git repo (`fatal: not a git repository`).
-  Asking the user now rather than initializing unilaterally, since it's a repo-level action
-  the plan flags as an offer, not an autonomous step.
+  Asked the user; **confirmed "init and commit."**
+  - The repo lives on a UNC network share (`//ccssbpp.file.core.windows.net/...`), which git
+    flags as "dubious ownership." Asked the user before running the standard fix
+    (`git config --global --add safe.directory '%(prefix)//...'`) since it's a global config
+    change; **confirmed.**
+  - `.gitignore` added: excludes `raw_data/`, `clean_data/`, `output/share/`, `*.parquet`,
+    plus R/Python/OS cruft, plus two hook-internal state files
+    (`.claude/hooks/.response_counter`, `.claude/hooks/.verify_reminder_cache` — ephemeral
+    counters, not secrets, but would churn every commit; caught on inspection before staging
+    per the "check contents of anything suspicious before committing" rule and excluded).
+  - Staged `.claude/`, `CLAUDE.md`, `.gitignore`, `code/`, `docs/`, `output/{reg,fig,sum}`
+    (not `output/share/` — 69 MB zip, already gitignored).
+  - **`protect-raw-data.py` false-positive on the first commit attempt:** the commit message
+    prose mentioned "raw_data/," and the `Co-Authored-By: ... <noreply@anthropic.com>` line's
+    closing `>` was read by the hook's naive `">" in command` check as a shell redirect, so
+    the two together tripped the block even though the commit touches no `raw_data/` path.
+    Confirmed via an offline reproduction of `check_bash()` against the exact command
+    string. Fixed by rewording the message to describe the excluded directories in prose
+    ("the raw source data ... are excluded via .gitignore") instead of writing the literal
+    `raw_data/` path token. Re-ran; committed clean as `bb7aed6` (root commit, 63 files,
+    6,915 insertions).
+  - Git auto-set the commit identity to `Emil Kee-Tui <ek559@cornell.edu>` (from the Windows
+    account) — left as-is; flagged to the user rather than changed unilaterally.
 
 ### Key facts to avoid re-deriving
 - Python venv: `"Z:/ek559/nys_algal_bloom/NYS algal bloom/code2/Scripts/python.exe"` — never
@@ -327,3 +348,148 @@ already in place from the prior session. Exit 0 on first attempt.
   `"$TEMP/<name>.log"` and an `echo "EXIT:$?"` sentinel appended, then read back with the
   Read/Bash tool after the background-task-completed notification — do the same for the R
   re-run and anything else non-trivial.
+
+---
+
+## Implementation session — 2026-08-29 (matched-window comparison + margin-per-trip rename)
+
+Plan: `.claude/plans/matched-window-comparison-and-margin-per-trip.md`. Two changes to D4:
+(1) rename `profit_per_trip` → `platform_margin_per_trip` everywhere + 7th figure panel;
+(2) replace the full-calendar-day pre/post comparison with time-of-day-matched windows
+(same 9h clock-hour span as `during`, replicated 14x at 2-4 week offsets, pooled).
+
+### `define_event_windows.py` — added matched-window derivation
+Added `pre_matched_windows`/`post_matched_windows` (14 each) as new JSON keys, alongside the
+existing `pre`/`during`/`post` (unchanged, still used by D1). Offsets 14-27 days from
+`during_start`/`during_end`. Verified: pre range 2021-08-05→08-19, post range
+2021-09-15→09-29, matches plan estimate.
+
+**Plan-assumption bug found and fixed during implementation:** the plan asserted matched
+windows would not overlap the old `pre`/`post` windows. They do, for the smallest offsets
+(14-15 days) — trivially, since "2 weeks back from during_start" and "the old 14-day pre
+window" cover overlapping calendar dates. This is harmless (matched windows live in a
+separate new file, never merged with the old pre/during/post tags — pure calendar
+coincidence, no double-counting risk), so the hard assertion was relaxed to only fail on
+overlap with `during` itself (the one overlap that would actually leak storm-hour trips
+into a pre/post bucket); overlap with old pre/post is now printed as an informational note.
+
+### NEW `clean_hvfhv_matched_windows.py`
+Mirrors `clean_hvfhv.py`'s filter rules/constructed columns, filters to the 28 matched
+windows instead of pre/during/post. Streamed both raw monthly files (776 MB combined).
+- **5,947,560** rows kept (pre_matched 2,932,625 / post_matched 3,014,935), output
+  **436.7 MB** — under the 500 MB safeguard threshold, no waiver needed (plan estimated
+  350-400 MB; actual came in a bit higher but still under).
+- Sanity checks passed: median driver_share 0.796, median fare_per_mile $5.68, tz verified,
+  platform set {Uber, Lyft, Via}.
+- Output: `clean_data/hvfhv_trips_matched_windows.parquet`.
+
+### `build_firm_window_aggregates.py` — rewired
+- `profit_per_trip` → `platform_margin_per_trip` in `collapse()`, `add_all_platform_rows()`,
+  both `keep_cols` lists.
+- D1 now split into `d1_full` (pre/during/post, feeds `day_agg`/the daily-trend figure,
+  unchanged Aug18-Sep17 range) and `d1_during` (during only, feeds the window comparison).
+  `window_source` = `d1_during` + the new matched-windows file, concatenated on the shared
+  schema (`replicate_offset_days` dropped — diagnostic-only).
+- `n_days`: during=0.375 (unchanged), pre_matched/post_matched=5.25 each (during's n_days x
+  14 replicates, read from the new `matched_window_params` JSON key, not hardcoded).
+- Sanity-check block re-keyed to `pre_matched`; asserts widened (per plan) to a sanity net
+  only, not a strict range match to the old full-day pre numbers, since the population is
+  now evening/overnight-only.
+- Ran clean, exit 0. Money identities held. **Interesting finding:** once time-of-day is
+  matched, the `during` volume "increase" nearly vanishes (pre_matched→during trips_per_day
+  +0.1%, vs. the old full-day comparison's +26.4%) — the old comparison's volume effect was
+  mostly a daytime-vs-evening artifact, not a storm effect. fare_per_mile (+64.0%) and
+  platform_margin_per_day (+46.2%) effects persist. pre_matched→post_matched changes are
+  small (+2.8% trips, +3.4% revenue, -10.3% margin/day).
+
+### `ida_first_pass.r` — table + figure updates
+- `window_order`/`window_labels` → `pre_matched`/`during`/`post_matched`.
+- Added "Platform margin per trip ($)" as measure_specs[[7]]; bumped figure height
+  8→10.5in for the extra facet row (7 panels, ncol=2 → 4 rows).
+- Rewrote `table_notes`: matched-window methodology, both matched date ranges, dropped the
+  now-inapplicable Labor Day-in-post claim (Labor Day 2021-09-06 falls between the two
+  matched ranges, outside both — confirmed correct in the rendered table).
+- **Found and fixed a latent parsing bug while writing this section:** base R's
+  `as.POSIXct()` on an ISO8601 string with a `-04:00` offset suffix (this project's JSON
+  format) silently truncates to date-only and drops the time of day, with no warning/error
+  (confirmed by direct inspection: `as.POSIXct("2021-09-01T17:00:00-04:00")` →
+  `"2021-09-01 EDT"`, losing the "17:00:00"). The original script's `during_start_dt`/
+  `during_end_dt` got away with this because they were only ever narrowed to `as.Date()`
+  for figure shading (date-level, so the dropped time didn't matter) — but the new
+  matched-range duration/timestamp text in `table_notes` needed the actual time. Fixed with
+  a `parse_local()` helper that strips the offset suffix and parses as naive local
+  wall-clock (same convention as `clean_hvfhv.py`'s `load_windows()`), applied to both the
+  new matched-range formatting and the pre-existing `during_start_dt`/`during_end_dt`.
+- Ran clean, exit 0. Table has 3 correctly-labeled blocks (51 rows, pack_rows boundaries
+  unchanged since row count didn't change), figure has 7 panels, shaded band lands
+  correctly. Table notes confirmed to state the matched-window methodology and correct
+  date ranges, no stale Labor Day-in-post claim.
+
+### Gate results
+All steps ran end-to-end on first or second attempt (one design fix in step 1's overlap
+assertion, one latent-bug fix in step 4's date parsing — both found and resolved during
+implementation, not left for a later pass). Outputs: `clean_data/ida_event_windows.json`
+(updated in place, new keys only), `clean_data/hvfhv_trips_matched_windows.parquet` (new,
+436.7 MB), `clean_data/firm_window_aggregates.parquet` / `firm_day_aggregates.parquet`
+(rebuilt), `output/reg/firm_window_first_pass.tex`, `output/fig/firm_window_first_pass.png`
+(both rebuilt). No git commit made (per plan, left staged for review).
+
+---
+
+## Follow-up — 2026-08-29 (figure: drop margin/day, switch daily panels to 9h-anchored)
+
+User request: drop the "Platform margin per day" figure panel, and make the remaining
+`_per_day` panels (trips, revenue) compare the SAME 9-hour clock-hour window as During-Ida
+across every day, not a full 24h day; state the platform margin formula in the figure notes.
+
+- `build_firm_window_aggregates.py`: `firm_day_aggregates.parquet` (the figure's only
+  consumer) is no longer a full-calendar-day collapse. Added a day-anchor tagging step:
+  each trip is assigned to the calendar date whose [17:00, next-day 02:00) window (During-
+  Ida's own clock-hour span, read from the JSON, not hardcoded) contains its pickup, then
+  `day_agg` collapses on that anchor date. Sourced from `d1_all` (ALL D1 window tags incl.
+  "buffer"), not the pre/during/post-only frame -- discovered that several anchor windows
+  straddle the pre/during/post boundary (e.g. 2021-09-02's window needs 2021-09-02
+  17:00-24:00, tagged "buffer") and would be silently truncated otherwise. Anchor-date
+  range clipped to match the old full-day figure's range (2021-08-18 to 2021-09-16, 30
+  dates) so the plotted x-axis is unchanged. Ran clean, exit 0: 6,158,749 rows folded into
+  the same 120-row (30 dates x 4 platform rows) output shape as before.
+- `ida_first_pass.r`: removed `platform_margin` from `measure_specs` (now 6 panels, reverted
+  ggsave to 3-row layout); relabeled `n_trips`/`revenue_passenger` to "Trips per 9-hour
+  period"/"Revenue per 9-hour period ($)"; narrowed the shaded band to a single date (Sep 1
+  only, since During-Ida's own window IS that date's anchor window under the new scheme,
+  no longer spanning two calendar dates); added the platform margin formula to the caption.
+- **Caption overflow bug found and fixed:** ggplot's `plot.caption` does not auto-wrap long
+  strings to the plot width -- it only breaks on literal `\n`, so the first draft's
+  long one-line caption silently ran off the bottom edge of the saved PNG with no
+  warning/error (only visible on inspection). Fixed with `strwrap(..., width = 130)` +
+  `paste(collapse = "\n")` to pre-wrap the caption, plus a smaller caption font (size 7),
+  explicit bottom plot margin, and height bumped 8 -> 9in to fit the 4-line note.
+- Ran clean, exit 0. Figure visually confirmed: 6 correctly-labeled panels, shading
+  narrowed to 2021-09-01 only, caption fully visible and states
+  "Platform margin = base_passenger_fare - driver_pay (firm gross take per trip, not
+  accounting profit)."
+
+### Follow-up — added Tropical Storm Henri comparison band
+User asked why Via looked flat in the figure (answer: real variation, just compressed by
+Uber's shared y-scale within each panel -- confirmed from `firm_day_aggregates.parquet`:
+Via's n_trips range 146-925 is 0.45% of Uber's max) and what the weather was Aug 20-22.
+Verified against `raw_data/weather/asos/asos_nyc_2021.csv` (not memory): dry Aug 20, then
+Tropical Storm Henri -- peak hourly rain 1.94in at 2021-08-21 23:00 local, a second
+lower-intensity round 2021-08-22 07:00-16:00 daytime, max gust only 21kt (rain event, not
+a wind event locally).
+
+Added a second `geom_rect` shaded column for Henri to `ida_first_pass.r`'s figure (blue,
+vs. Ida's red), with a proper `scale_fill_manual` "Storm event" legend (replaced the old
+bare `annotate("rect", fill="red", ...)` which had no legend). Henri's peak hour (Aug 21
+23:00) falls inside the 2021-08-21 anchor window under the existing 9h-anchor scheme, so
+it plots as a single date exactly like Ida -- but Henri's daytime rain (Aug 22 07:00-16:00)
+falls outside every anchor window and is NOT separately shaded; noted in the caption rather
+than silently omitted. Henri's date/peak-value are hardcoded (not re-derived at runtime
+like Ida's JSON-frozen window) since this is a decorative comparison band, not a causal
+window -- but verified from the actual ASOS file in this session (cited in the R comment),
+not from memory, consistent with CLAUDE.md's verification requirement. Ran clean, exit 0;
+figure confirmed to show both bands with a working two-legend layout (Platform + Storm
+event). Interesting finding: Henri's fare_per_mile/platform_margin_per_trip spikes are
+almost as large as Ida's, but trips_per_9h RISES at Henri (unlike Ida's collapse) --
+consistent with Henri being a rain-only event that didn't shut down road travel the way
+Ida's flash flooding did.

@@ -26,6 +26,14 @@ STORM_THRESHOLD_IN = 0.10
 PRE_DAYS = 14
 POST_DAYS = 14
 
+# Matched-window replicates: same clock-hour window as `during`, shifted by
+# whole days so the 17:00-02:00 shape and exact clock times are preserved
+# with no special-casing for the midnight crossing. See
+# .claude/plans/matched-window-comparison-and-margin-per-trip.md.
+N_REPLICATES = 14
+OFFSET_MIN_DAYS = 14
+OFFSET_MAX_DAYS = 27
+
 
 def main() -> None:
     if OUTPUT_PATH.exists():
@@ -141,6 +149,90 @@ def main() -> None:
         "post":   {"start": post_start.isoformat(),   "end": post_end.isoformat()},
     }
 
+    # Matched-window replicates: same clock-hour window as `during`
+    # ([during_start, during_end_excl)), shifted by whole days so the
+    # comparison isolates the storm's effect on that specific time-of-day
+    # slice rather than conflating it with ordinary daytime-vs-evening
+    # demand patterns (plan: matched-window-comparison-and-margin-per-trip.md).
+    pre_matched_windows = []
+    post_matched_windows = []
+    for k in range(OFFSET_MIN_DAYS, OFFSET_MAX_DAYS + 1):
+        offset = pd.Timedelta(days=k)
+        pre_matched_windows.append({
+            "start": (during_start - offset).isoformat(),
+            "end": (during_end_excl - offset).isoformat(),
+            "offset_days": -k,
+        })
+        post_matched_windows.append({
+            "start": (during_start + offset).isoformat(),
+            "end": (during_end_excl + offset).isoformat(),
+            "offset_days": k,
+        })
+
+    print(f"\nMatched-window replicates: N={N_REPLICATES}, offsets "
+          f"{OFFSET_MIN_DAYS}-{OFFSET_MAX_DAYS} days, same clock-hour span as "
+          f"`during` ({duration_hours:.0f}h each).")
+    print("Pre-matched windows:")
+    for w in pre_matched_windows:
+        print(f"  offset={w['offset_days']:+d}d  [{w['start']}, {w['end']})")
+    print("Post-matched windows:")
+    for w in post_matched_windows:
+        print(f"  offset={w['offset_days']:+d}d  [{w['start']}, {w['end']})")
+
+    # Defensive checks: matched windows must stay inside the two downloaded
+    # raw monthly files (2021-08, 2021-09) so no new download is needed, and
+    # must never overlap `during` -- that would leak storm-hour trips into
+    # a "pre"/"post" bucket, which is the one overlap that would actually
+    # corrupt the comparison.
+    #
+    # Overlap against the OLD `pre`/`post` (14-full-calendar-day) windows is
+    # checked too, but only as an informational print, not a hard failure:
+    # the matched windows for the smallest offsets (14-15 days) do fall
+    # inside the calendar span of the old 14-day pre window (both look back
+    # from the same during_start_day), simply because "2 weeks back" and
+    # "the old pre window" cover overlapping calendar dates. This is
+    # harmless -- the matched windows are built into a separate new parquet
+    # file from the raw monthly data and never merged with the old
+    # pre/during/post tags, so there is no double-counting risk, only a
+    # calendar-range coincidence. Discovered during implementation; the plan
+    # anticipated no overlap and this is a correction to that assumption.
+    valid_range = (
+        pd.Timestamp("2021-08-01", tz="America/New_York"),
+        pd.Timestamp("2021-09-30", tz="America/New_York"),
+    )
+    during_bounds = (during_start, during_end_excl)
+    named_bounds = [
+        (pd.Timestamp(windows[w]["start"]), pd.Timestamp(windows[w]["end"]))
+        for w in ("pre", "post")
+    ]
+    any_pre_post_overlap = False
+    for side_name, side in (("pre_matched", pre_matched_windows), ("post_matched", post_matched_windows)):
+        for w in side:
+            w_start = pd.Timestamp(w["start"])
+            w_end = pd.Timestamp(w["end"])
+            assert valid_range[0] <= w_start and w_end <= valid_range[1], (
+                f"{side_name} window offset={w['offset_days']} falls outside "
+                f"[{valid_range[0]}, {valid_range[1]}] -- would need a download "
+                f"beyond the two raw monthly files already on disk."
+            )
+            during_overlap = w_start < during_bounds[1] and during_bounds[0] < w_end
+            assert not during_overlap, (
+                f"{side_name} window offset={w['offset_days']} "
+                f"[{w_start}, {w_end}) overlaps the `during` storm window "
+                f"[{during_bounds[0]}, {during_bounds[1]}) -- this would leak "
+                f"storm-hour trips into a pre/post bucket."
+            )
+            for b_start, b_end in named_bounds:
+                if w_start < b_end and b_start < w_end:
+                    any_pre_post_overlap = True
+                    print(f"  NOTE: {side_name} offset={w['offset_days']:+d} "
+                          f"[{w_start}, {w_end}) overlaps the old 14-day "
+                          f"pre/post window [{b_start}, {b_end}) -- harmless "
+                          f"calendar coincidence, see comment above.")
+    print(f"Verified: matched windows stay within the downloaded raw data range "
+          f"and never overlap the `during` storm window "
+          f"(overlap with old pre/post windows: {any_pre_post_overlap}, informational only).")
+
     payload = {
         "event": "Hurricane Ida remnants, NYC",
         "derived_from": "raw_data/weather/asos/asos_nyc_2021.csv "
@@ -153,6 +245,13 @@ def main() -> None:
         "windows": windows,
         "pre_days": PRE_DAYS,
         "post_days": POST_DAYS,
+        "pre_matched_windows": pre_matched_windows,
+        "post_matched_windows": post_matched_windows,
+        "matched_window_params": {
+            "n_replicates": N_REPLICATES,
+            "offset_min_days": OFFSET_MIN_DAYS,
+            "offset_max_days": OFFSET_MAX_DAYS,
+        },
         "confounders": {
             "labor_day_2021_09_06_in_post_window": bool(labor_day_in_post),
             "note": "US Labor Day (Monday 2021-09-06) falls inside the post "
