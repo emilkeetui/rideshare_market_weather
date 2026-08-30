@@ -1,0 +1,56 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"Z:/ek559/nys_algal_bloom/NYS algal bloom/code2/Scripts/python.exe\" .claude/hooks/protect-raw-data.py"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"Z:/ek559/nys_algal_bloom/NYS algal bloom/code2/Scripts/python.exe\" .claude/hooks/verify-reminder.py"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"Z:/ek559/nys_algal_bloom/NYS algal bloom/code2/Scripts/python.exe\" .claude/hooks/log-reminder.py"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"Z:/ek559/nys_algal_bloom/NYS algal bloom/code2/Scripts/python.exe\" .claude/hooks/pre-compact.py"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/notify.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

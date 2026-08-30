@@ -1,0 +1,23 @@
+# Data directories -- large, regenerable, or read-only source data
+raw_data/
+clean_data/
+output/share/
+*.parquet
+
+# R
+.Rhistory
+.RData
+.Rproj.user/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+
+# Claude Code hook local state (ephemeral, churns every session)
+.claude/hooks/.response_counter
+.claude/hooks/.verify_reminder_cache

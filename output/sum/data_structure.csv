@@ -1,0 +1,8 @@
+entity,cardinality,obs_per_unit_min,obs_per_unit_median,obs_per_unit_max
+pu_zone_id,261,3,43820.0,219634
+do_zone_id,260,7,45108.5,252968
+pu_zone_id x do_zone_id,59549,1,30.0,47844
+platform,3,34698,4355217.0,10218034
+dispatching_base_num,32,3,264956.5,4352434
+date,32,338970,447905.0,593204
+datetime_hour,768,3172,20579.0,36073
