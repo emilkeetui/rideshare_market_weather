@@ -92,6 +92,7 @@ fhv_extreme_weather/
 │   │   └── usgs_gauges/         # USGS stream/tide gauge stage during Ida
 │   ├── chicago_tnp/             # Chicago TNP trip records (control city, Design 3)
 │   └── subway/                  # MTA turnstile / ridership (substitute mode control)
+│       └── mta_alerts/          # MTA service alerts, NYCT Subway + Bus, 2020-04 on (date is UTC!)
 │
 ├── clean_data/                  # Intermediate pipeline outputs
 │   ├── hvfhv_trips_2021.parquet         # cleaned trip-level records, 2021
