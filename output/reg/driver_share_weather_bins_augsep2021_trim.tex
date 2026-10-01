@@ -1,0 +1,81 @@
+\ifdefined\ifclassloaded
+\@ifclassloaded{beamer}{\begin{adjustbox}{max width=\linewidth}}{}
+\fi
+
+\begingroup
+\centering
+\begin{tabular}{lc}
+   \tabularnewline \midrule \midrule
+   Dependent Variable:                           & driver\_share\\   
+   Sample:                                       & augsep2021\_trim \\    
+   Model:                                        & (1)\\  
+   \midrule
+   \emph{Variables}\\
+   Origin rain, current hour (mm/h) $=$ 0.1-0.25 & -0.0055\\   
+                                                 & (0.0075)\\   
+   Origin rain, current hour (mm/h) $=$ 0.25-0.5 & 0.0002\\   
+                                                 & (0.0173)\\   
+   Origin rain, current hour (mm/h) $=$ 0.5-1    & 0.0014\\   
+                                                 & (0.0128)\\   
+   Origin rain, current hour (mm/h) $=$ 1-2      & -0.0193$^{*}$\\   
+                                                 & (0.0106)\\   
+   Origin rain, current hour (mm/h) $=$ 2-4      & 0.0094\\   
+                                                 & (0.0128)\\   
+   Origin rain, current hour (mm/h) $=$ 4-6      & -0.0212\\   
+                                                 & (0.0140)\\   
+   Origin rain, current hour (mm/h) $=$ 6-10     & -0.0203\\   
+                                                 & (0.0156)\\   
+   Origin rain, current hour (mm/h) $=$ 10-15    & -0.0236\\   
+                                                 & (0.0189)\\   
+   Origin rain, current hour (mm/h) $=$ 15-25    & -0.0314\\   
+                                                 & (0.0209)\\   
+   Origin rain, current hour (mm/h) $=$ 25-40    & -0.0242\\   
+                                                 & (0.0179)\\   
+   Origin rain, current hour (mm/h) $=$ ge40     & 0.0943$^{***}$\\   
+                                                 & (0.0178)\\   
+   Dest. rain, current hour (mm/h) $=$ 0.1-0.25  & 0.0113\\   
+                                                 & (0.0185)\\   
+   Dest. rain, current hour (mm/h) $=$ 0.25-0.5  & -0.0130\\   
+                                                 & (0.0088)\\   
+   Dest. rain, current hour (mm/h) $=$ 0.5-1     & -0.0030\\   
+                                                 & (0.0083)\\   
+   Dest. rain, current hour (mm/h) $=$ 1-2       & -0.0040\\   
+                                                 & (0.0110)\\   
+   Dest. rain, current hour (mm/h) $=$ 2-4       & 0.0111$^{*}$\\   
+                                                 & (0.0063)\\   
+   Dest. rain, current hour (mm/h) $=$ 4-6       & -0.0068\\   
+                                                 & (0.0105)\\   
+   Dest. rain, current hour (mm/h) $=$ 6-10      & 0.0081\\   
+                                                 & (0.0090)\\   
+   Dest. rain, current hour (mm/h) $=$ 10-15     & 0.0221$^{*}$\\   
+                                                 & (0.0113)\\   
+   Dest. rain, current hour (mm/h) $=$ 15-25     & 0.0122\\   
+                                                 & (0.0115)\\   
+   Dest. rain, current hour (mm/h) $=$ 25-40     & 0.0200\\   
+                                                 & (0.0131)\\   
+   Dest. rain, current hour (mm/h) $=$ ge40      & 0.0133\\   
+                                                 & (0.0189)\\   
+   \midrule
+   \emph{Fixed-effects}\\
+   platform                                      & Yes\\  
+   pu\_fe                                        & Yes\\  
+   do\_fe                                        & Yes\\  
+   month                                         & Yes\\  
+   dow                                           & Yes\\  
+   \midrule
+   \emph{Fit statistics}\\
+   Observations                                  & 18,226,895\\  
+   R$^2$                                         & 0.00139\\  
+   \midrule \midrule
+   \multicolumn{2}{l}{\emph{Clustered (pu\_zone\_id \& date\_int) standard-errors in parentheses}}\\
+   \multicolumn{2}{l}{\emph{Signif. Codes: ***: 0.01, **: 0.05, *: 0.1}}\\
+\end{tabular}
+ 
+\par \raggedright 
+Dependent variable: driver\_share = driver\_pay / base\_passenger\_fare (trip level, cell mean). Current-hour rain bins (mm/h, left-closed) at origin (pickup hour) and destination (dropoff hour); reference bin is dry, below 0.1 mm/h. No temperature controls. Trips ending outside NYC (zone 265) are kept; their destination-rain indicators are absorbed by the destination-zone x hour FE, so they inform only origin-rain coefficients. Standard errors two-way clustered by pickup taxi zone and pickup date. Observations are OD cells (platform x PU zone x DO zone x pickup hour x dropoff hour) weighted by trips per cell, so estimates equal trip-level OLS. Fixed effects: platform, PU zone x pickup hour-of-day, DO zone x dropoff hour-of-day, month, day-of-week. No date fixed effect: identification includes variation across days within a month as well as across zones and hours. Access-a-Ride trips excluded. Significance: *** p<0.01, ** p<0.05, * p<0.1. N cells = 18,226,927; N trips = 28,964,702; months = 8,9.
+\par\endgroup
+
+
+\ifdefined\ifclassloaded
+\@ifclassloaded{beamer}{\end{adjustbox}}{}
+\fi

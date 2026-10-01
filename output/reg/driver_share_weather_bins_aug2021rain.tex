@@ -1,0 +1,81 @@
+\ifdefined\ifclassloaded
+\@ifclassloaded{beamer}{\begin{adjustbox}{max width=\linewidth}}{}
+\fi
+
+\begingroup
+\centering
+\begin{tabular}{lc}
+   \tabularnewline \midrule \midrule
+   Dependent Variable:             & driver\_share\\   
+   Sample:                         & aug2021rain \\   
+   Model:                          & (1)\\  
+   \midrule
+   \emph{Variables}\\
+   Origin rain (mm/h) $=$ 0.1-0.25 & 0.0012\\   
+                                   & (0.0098)\\   
+   Origin rain (mm/h) $=$ 0.25-0.5 & 0.0265\\   
+                                   & (0.0278)\\   
+   Origin rain (mm/h) $=$ 0.5-1    & 0.0122\\   
+                                   & (0.0147)\\   
+   Origin rain (mm/h) $=$ 1-2      & -0.0245$^{*}$\\   
+                                   & (0.0136)\\   
+   Origin rain (mm/h) $=$ 2-4      & 0.0100\\   
+                                   & (0.0175)\\   
+   Origin rain (mm/h) $=$ 4-6      & -0.0228\\   
+                                   & (0.0192)\\   
+   Origin rain (mm/h) $=$ 6-10     & -0.0221\\   
+                                   & (0.0207)\\   
+   Origin rain (mm/h) $=$ 10-15    & -0.0461$^{**}$\\   
+                                   & (0.0187)\\   
+   Origin rain (mm/h) $=$ 15-25    & -0.0437$^{**}$\\   
+                                   & (0.0205)\\   
+   Origin rain (mm/h) $=$ 25-40    & -0.0456$^{***}$\\   
+                                   & (0.0145)\\   
+   Origin rain (mm/h) $=$ ge40     & 0.0376$^{*}$\\   
+                                   & (0.0218)\\   
+   Dest. rain (mm/h) $=$ 0.1-0.25  & 0.0021\\   
+                                   & (0.0081)\\   
+   Dest. rain (mm/h) $=$ 0.25-0.5  & -0.0032\\   
+                                   & (0.0106)\\   
+   Dest. rain (mm/h) $=$ 0.5-1     & 0.0069\\   
+                                   & (0.0088)\\   
+   Dest. rain (mm/h) $=$ 1-2       & 0.0107\\   
+                                   & (0.0145)\\   
+   Dest. rain (mm/h) $=$ 2-4       & 0.0087\\   
+                                   & (0.0097)\\   
+   Dest. rain (mm/h) $=$ 4-6       & -0.0155\\   
+                                   & (0.0122)\\   
+   Dest. rain (mm/h) $=$ 6-10      & 0.0076\\   
+                                   & (0.0133)\\   
+   Dest. rain (mm/h) $=$ 10-15     & 0.0110\\   
+                                   & (0.0082)\\   
+   Dest. rain (mm/h) $=$ 15-25     & 0.0109\\   
+                                   & (0.0101)\\   
+   Dest. rain (mm/h) $=$ 25-40     & 0.0069\\   
+                                   & (0.0156)\\   
+   Dest. rain (mm/h) $=$ ge40      & 0.1348$^{***}$\\   
+                                   & (0.0077)\\   
+   \midrule
+   \emph{Fixed-effects}\\
+   platform                        & Yes\\  
+   pu\_zone\_id-pu\_hod            & Yes\\  
+   do\_zone\_id-do\_hod            & Yes\\  
+   month                           & Yes\\  
+   dow                             & Yes\\  
+   \midrule
+   \emph{Fit statistics}\\
+   Observations                    & 9,148,864\\  
+   R$^2$                           & 0.00182\\  
+   \midrule \midrule
+   \multicolumn{2}{l}{\emph{Clustered (pu\_zone\_id \& date) standard-errors in parentheses}}\\
+   \multicolumn{2}{l}{\emph{Signif. Codes: ***: 0.01, **: 0.05, *: 0.1}}\\
+\end{tabular}
+ 
+\par \raggedright 
+Dependent variable: driver\_share = driver\_pay / base\_passenger\_fare (trip level, cell mean). Rain bins (mm/h, left-closed) at origin (pickup hour) and destination (dropoff hour); reference bin is dry, below 0.1 mm/h. No temperature controls. Trips ending outside NYC (zone 265) are kept; their destination-rain indicator is absorbed by the destination-zone x hour FE, so they inform only origin-rain coefficients. Standard errors two-way clustered by pickup taxi zone and pickup date. Observations are OD cells (platform x PU zone x DO zone x pickup hour x dropoff hour) weighted by trips per cell, so estimates equal trip-level OLS. Fixed effects: platform, PU zone x pickup hour-of-day, DO zone x dropoff hour-of-day, month, day-of-week. No date fixed effect: identification includes variation across days within a month as well as across zones and hours. Access-a-Ride trips excluded. N cells = 9,148,894; N trips = 14,364,514; months = 8.
+\par\endgroup
+
+
+\ifdefined\ifclassloaded
+\@ifclassloaded{beamer}{\end{adjustbox}}{}
+\fi

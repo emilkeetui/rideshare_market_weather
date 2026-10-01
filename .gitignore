@@ -21,3 +21,17 @@ Thumbs.db
 # Claude Code hook local state (ephemeral, churns every session)
 .claude/hooks/.response_counter
 .claude/hooks/.verify_reminder_cache
+
+# R fitted-model objects (not needed for LaTeX/Overleaf)
+output/reg/*.rds
+
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+*.bbl
+*.blg
+main.pdf
