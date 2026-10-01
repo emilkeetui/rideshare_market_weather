@@ -1,0 +1,118 @@
+\ifdefined\ifclassloaded
+\@ifclassloaded{beamer}{\begin{adjustbox}{max width=\linewidth}}{}
+\fi
+\begingroup
+\centering
+\begin{tabular}{lcccc}
+   \tabularnewline \midrule \midrule
+   Dependent Variable: & driver\_share & log fare & log pay & log share\\
+   Sample: & 2021\_decomp & 2021\_decomp & 2021\_decomp & 2021\_decomp \\
+   Model: & (1) & (2) & (3) & (4)\\
+   \midrule
+   \emph{Variables}\\
+   Origin rain, current hour (mm/h) $=$ 0.1-0.25 & -0.0028 & 0.0119$^{**}$ & 0.0095$^{**}$ & -0.0023\\
+    & (0.0035) & (0.0049) & (0.0047) & (0.0034)\\
+   Origin rain, current hour (mm/h) $=$ 0.25-0.5 & -0.0035 & 0.0233$^{***}$ & 0.0177$^{***}$ & -0.0056$^{***}$\\
+    & (0.0033) & (0.0067) & (0.0065) & (0.0020)\\
+   Origin rain, current hour (mm/h) $=$ 0.5-1 & -0.0025 & 0.0298$^{***}$ & 0.0263$^{***}$ & -0.0035\\
+    & (0.0035) & (0.0055) & (0.0061) & (0.0028)\\
+   Origin rain, current hour (mm/h) $=$ 1-2 & -0.0014 & 0.0581$^{***}$ & 0.0539$^{***}$ & -0.0042\\
+    & (0.0049) & (0.0111) & (0.0121) & (0.0044)\\
+   Origin rain, current hour (mm/h) $=$ 2-4 & 0.0054 & 0.0531$^{***}$ & 0.0540$^{***}$ & 0.0009\\
+    & (0.0050) & (0.0090) & (0.0093) & (0.0036)\\
+   Origin rain, current hour (mm/h) $=$ 4-6 & 0.0053 & 0.1122$^{***}$ & 0.1031$^{***}$ & -0.0091\\
+    & (0.0065) & (0.0159) & (0.0147) & (0.0064)\\
+   Origin rain, current hour (mm/h) $=$ 6-10 & 0.0009 & 0.1668$^{***}$ & 0.1549$^{***}$ & -0.0119\\
+    & (0.0075) & (0.0169) & (0.0157) & (0.0081)\\
+   Origin rain, current hour (mm/h) $=$ 10-15 & 0.0069 & 0.1907$^{***}$ & 0.1880$^{***}$ & -0.0027\\
+    & (0.0096) & (0.0252) & (0.0262) & (0.0079)\\
+   Origin rain, current hour (mm/h) $=$ 15-25 & 0.0146 & 0.2370$^{***}$ & 0.2329$^{***}$ & -0.0041\\
+    & (0.0155) & (0.0265) & (0.0225) & (0.0129)\\
+   Origin rain, current hour (mm/h) $=$ 25-40 & 0.0204 & 0.2511$^{***}$ & 0.2456$^{***}$ & -0.0055\\
+    & (0.0235) & (0.0436) & (0.0353) & (0.0247)\\
+   Origin rain, current hour (mm/h) $=$ ge40 & 0.1073$^{***}$ & 0.2862$^{***}$ & 0.3350$^{***}$ & 0.0487$^{***}$\\
+    & (0.0161) & (0.0426) & (0.0378) & (0.0114)\\
+   Dest. rain, current hour (mm/h) $=$ 0.1-0.25 & 0.0089$^{*}$ & -0.0010 & -0.0001 & 0.0009\\
+    & (0.0050) & (0.0055) & (0.0053) & (0.0034)\\
+   Dest. rain, current hour (mm/h) $=$ 0.25-0.5 & 0.0006 & 0.0038 & 0.0023 & -0.0015\\
+    & (0.0034) & (0.0070) & (0.0072) & (0.0022)\\
+   Dest. rain, current hour (mm/h) $=$ 0.5-1 & 0.0060 & -0.0018 & 0.0012 & 0.0030\\
+    & (0.0037) & (0.0067) & (0.0076) & (0.0028)\\
+   Dest. rain, current hour (mm/h) $=$ 1-2 & 0.0067 & 0.0019 & 0.0057 & 0.0039\\
+    & (0.0053) & (0.0103) & (0.0120) & (0.0043)\\
+   Dest. rain, current hour (mm/h) $=$ 2-4 & 0.0132$^{**}$ & -0.0244$^{**}$ & -0.0141 & 0.0102$^{**}$\\
+    & (0.0051) & (0.0094) & (0.0098) & (0.0042)\\
+   Dest. rain, current hour (mm/h) $=$ 4-6 & 0.0027 & -0.0104 & -0.0032 & 0.0073\\
+    & (0.0069) & (0.0124) & (0.0130) & (0.0056)\\
+   Dest. rain, current hour (mm/h) $=$ 6-10 & 0.0123$^{*}$ & 0.0063 & 0.0197 & 0.0134$^{**}$\\
+    & (0.0066) & (0.0119) & (0.0149) & (0.0053)\\
+   Dest. rain, current hour (mm/h) $=$ 10-15 & 0.0200$^{***}$ & 0.0177 & 0.0390 & 0.0213$^{***}$\\
+    & (0.0062) & (0.0245) & (0.0247) & (0.0079)\\
+   Dest. rain, current hour (mm/h) $=$ 15-25 & 0.0232$^{**}$ & 0.0558 & 0.0802$^{*}$ & 0.0244$^{***}$\\
+    & (0.0092) & (0.0495) & (0.0452) & (0.0057)\\
+   Dest. rain, current hour (mm/h) $=$ 25-40 & 0.0214$^{*}$ & 0.0346 & 0.0667 & 0.0321\\
+    & (0.0109) & (0.0846) & (0.0673) & (0.0207)\\
+   Dest. rain, current hour (mm/h) $=$ ge40 & 0.0020 & -0.0740$^{**}$ & -0.0454 & 0.0286$^{***}$\\
+    & (0.0172) & (0.0359) & (0.0362) & (0.0056)\\
+   Origin rain, prev. 6 h (mm) $=$ 0.1-0.5 & 0.0010 & -0.0062 & -0.0083 & -0.0022\\
+    & (0.0026) & (0.0048) & (0.0052) & (0.0020)\\
+   Origin rain, prev. 6 h (mm) $=$ 0.5-1 & 0.0007 & -0.0100 & -0.0129 & -0.0029\\
+    & (0.0047) & (0.0074) & (0.0080) & (0.0035)\\
+   Origin rain, prev. 6 h (mm) $=$ 1-2 & -0.0051 & -0.0034 & -0.0120 & -0.0086$^{**}$\\
+    & (0.0042) & (0.0122) & (0.0114) & (0.0035)\\
+   Origin rain, prev. 6 h (mm) $=$ 2-5 & -0.0049 & -0.0267$^{***}$ & -0.0353$^{***}$ & -0.0086$^{***}$\\
+    & (0.0044) & (0.0082) & (0.0081) & (0.0029)\\
+   Origin rain, prev. 6 h (mm) $=$ 5-10 & -0.0041 & -0.0416$^{***}$ & -0.0468$^{***}$ & -0.0052\\
+    & (0.0039) & (0.0114) & (0.0117) & (0.0034)\\
+   Origin rain, prev. 6 h (mm) $=$ 10-20 & 0.0028 & -0.0210 & -0.0271 & -0.0061\\
+    & (0.0084) & (0.0164) & (0.0167) & (0.0072)\\
+   Origin rain, prev. 6 h (mm) $=$ 20-35 & 0.0061 & -0.0384$^{**}$ & -0.0459$^{***}$ & -0.0075\\
+    & (0.0067) & (0.0174) & (0.0177) & (0.0058)\\
+   Origin rain, prev. 6 h (mm) $=$ 35-50 & -0.0115 & 0.0137 & -0.0074 & -0.0211$^{***}$\\
+    & (0.0155) & (0.0323) & (0.0291) & (0.0058)\\
+   Origin rain, prev. 6 h (mm) $=$ 50-75 & -0.0827$^{***}$ & 0.1272$^{*}$ & 0.0329 & -0.0943$^{***}$\\
+    & (0.0145) & (0.0733) & (0.0675) & (0.0180)\\
+   Origin rain, prev. 6 h (mm) $=$ ge75 & -0.0738$^{***}$ & 0.3364$^{***}$ & 0.2374$^{**}$ & -0.0990$^{***}$\\
+    & (0.0261) & (0.1010) & (0.1078) & (0.0300)\\
+   Dest. rain, prev. 6 h (mm) $=$ 0.1-0.5 & -0.0022 & -0.0022 & -0.0006 & 0.0016\\
+    & (0.0022) & (0.0043) & (0.0045) & (0.0017)\\
+   Dest. rain, prev. 6 h (mm) $=$ 0.5-1 & -0.0014 & 0.0019 & 0.0035 & 0.0016\\
+    & (0.0036) & (0.0058) & (0.0060) & (0.0028)\\
+   Dest. rain, prev. 6 h (mm) $=$ 1-2 & -0.0045 & 0.0149$^{*}$ & 0.0130 & -0.0019\\
+    & (0.0039) & (0.0079) & (0.0080) & (0.0025)\\
+   Dest. rain, prev. 6 h (mm) $=$ 2-5 & -0.0095$^{**}$ & 0.0037 & -0.0006 & -0.0043\\
+    & (0.0041) & (0.0066) & (0.0068) & (0.0028)\\
+   Dest. rain, prev. 6 h (mm) $=$ 5-10 & -0.0048 & 0.0131 & 0.0120 & -0.0011\\
+    & (0.0039) & (0.0100) & (0.0101) & (0.0028)\\
+   Dest. rain, prev. 6 h (mm) $=$ 10-20 & -0.0051 & 0.0241$^{*}$ & 0.0247$^{*}$ & 0.0005\\
+    & (0.0070) & (0.0132) & (0.0129) & (0.0055)\\
+   Dest. rain, prev. 6 h (mm) $=$ 20-35 & -0.0028 & -0.0036 & -0.0002 & 0.0034\\
+    & (0.0061) & (0.0156) & (0.0160) & (0.0051)\\
+   Dest. rain, prev. 6 h (mm) $=$ 35-50 & 0.0070 & 0.0433 & 0.0364 & -0.0069\\
+    & (0.0203) & (0.0418) & (0.0416) & (0.0057)\\
+   Dest. rain, prev. 6 h (mm) $=$ 50-75 & -0.0269 & 0.0985$^{**}$ & 0.0668$^{*}$ & -0.0317\\
+    & (0.0314) & (0.0403) & (0.0382) & (0.0293)\\
+   Dest. rain, prev. 6 h (mm) $=$ ge75 & -0.0021 & 0.2211$^{***}$ & 0.1993$^{**}$ & -0.0218\\
+    & (0.0232) & (0.0695) & (0.0777) & (0.0222)\\
+   \midrule
+   \emph{Fixed-effects}\\
+   Platform (company) & Yes & Yes & Yes & Yes\\
+   PU zone $\times$ pickup hour-of-day & Yes & Yes & Yes & Yes\\
+   DO zone $\times$ dropoff hour-of-day & Yes & Yes & Yes & Yes\\
+   Month & Yes & Yes & Yes & Yes\\
+   Day-of-week & Yes & Yes & Yes & Yes\\
+   \midrule
+   \emph{Fit statistics}\\
+   Observations & 106,438,465 & 106,438,465 & 106,438,465 & 106,438,465\\
+   R$^2$ & 0.00080 & 0.30741 & 0.29702 & 0.11788\\
+   \midrule \midrule
+   \multicolumn{5}{l}{\emph{Clustered (pickup zone \& pickup date) standard-errors in parentheses}}\\
+   \multicolumn{5}{l}{\emph{Signif. Codes: ***: 0.01, **: 0.05, *: 0.1}}\\
+\end{tabular}
+ 
+\par \raggedright 
+Dependent variables (trip level, cell means): driver share = driver\_pay / base\_passenger\_fare; log fare = ln(base\_passenger\_fare); log pay = ln(driver\_pay); log share = ln(driver\_pay / base\_passenger\_fare) = log pay - log fare exactly, so the log-share coefficient equals the log-pay coefficient minus the log-fare coefficient. Coefficients on the log outcomes are in log points (x100 is approximately a percent change). Log fare and log pay also absorb changes in trip length and duration (composition), whereas the share is a ratio of the two on the same trips. Current-hour rain bins (mm/h, left-closed) at origin (pickup hour) and destination (dropoff hour); reference bin is dry, below 0.1 mm/h. Previous-6-hour rain bins (mm, left-closed): total rain in hours t-6 to t-1 before the pickup (origin) or dropoff (destination) hour, excluding the current hour, requiring at least 5 of the 6 hours observed; reference bin is dry, below 0.1 mm. No temperature controls. Trips ending outside NYC (zone 265) are kept; their destination-rain indicators are absorbed by the destination-zone x hour FE, so they inform only origin-rain coefficients. Standard errors two-way clustered by pickup taxi zone and pickup date. Observations are OD cells (platform x PU zone x DO zone x pickup hour x dropoff hour) weighted by trips per cell, so estimates equal trip-level OLS. Fixed effects: platform, PU zone x pickup hour-of-day, DO zone x dropoff hour-of-day, month, day-of-week. No date fixed effect: identification includes variation across days within a month as well as across zones and hours. Access-a-Ride trips excluded. Significance: *** p<0.01, ** p<0.05, * p<0.1. N cells = 106,438,465 (after fixed-effect singleton removal); N trips = 171,429,641; months = 1,2,3,4,5,6,7,8,9,10,11,12. Estimated by exact batched FWL; validated against fixest::feols on Aug-Sep 2021 to 1e-6.
+\par\endgroup
+\ifdefined\ifclassloaded
+\@ifclassloaded{beamer}{\end{adjustbox}}{}
+\fi

@@ -96,22 +96,22 @@
     & (0.0232)\\
    \midrule
    \emph{Fixed-effects}\\
-   platform & Yes\\
-   pu\_fe & Yes\\
-   do\_fe & Yes\\
-   month & Yes\\
-   dow & Yes\\
+   Platform (company) & Yes\\
+   PU zone $\times$ pickup hour-of-day & Yes\\
+   DO zone $\times$ dropoff hour-of-day & Yes\\
+   Month & Yes\\
+   Day-of-week & Yes\\
    \midrule
    \emph{Fit statistics}\\
    Observations & 106,438,465\\
    R$^2$ & 0.00080\\
    \midrule \midrule
-   \multicolumn{2}{l}{\emph{Clustered (pu\_zone\_id \& date\_int) standard-errors in parentheses}}\\
+   \multicolumn{2}{l}{\emph{Clustered (pickup zone \& pickup date) standard-errors in parentheses}}\\
    \multicolumn{2}{l}{\emph{Signif. Codes: ***: 0.01, **: 0.05, *: 0.1}}\\
 \end{tabular}
  
 \par \raggedright 
-Dependent variable: driver\_share = driver\_pay / base\_passenger\_fare (trip level, cell mean). Current-hour rain bins (mm/h, left-closed) at origin (pickup hour) and destination (dropoff hour); reference bin is dry, below 0.1 mm/h. Previous-6-hour rain bins (mm, left-closed): total rain in hours t-6 to t-1 before the pickup (origin) or dropoff (destination) hour, excluding the current hour, requiring at least 5 of the 6 hours observed; reference bin is dry, below 0.1 mm. No temperature controls. Trips ending outside NYC (zone 265) are kept; their destination-rain indicators are absorbed by the destination-zone x hour FE, so they inform only origin-rain coefficients. Standard errors two-way clustered by pickup taxi zone and pickup date. Observations are OD cells (platform x PU zone x DO zone x pickup hour x dropoff hour) weighted by trips per cell, so estimates equal trip-level OLS. Fixed effects: platform, PU zone x pickup hour-of-day, DO zone x dropoff hour-of-day, month, day-of-week. No date fixed effect: identification includes variation across days within a month as well as across zones and hours. Access-a-Ride trips excluded. Significance: *** p<0.01, ** p<0.05, * p<0.1. N cells = 106,438,499; N trips = 171,429,675; months = 1,2,3,4,5,6,7,8,9,10,11,12. Estimated by exact batched FWL; validated against fixest::feols on Aug-Sep 2021 to 1e-6.
+Dependent variable: driver\_share = driver\_pay / base\_passenger\_fare (trip level, cell mean). Current-hour rain bins (mm/h, left-closed) at origin (pickup hour) and destination (dropoff hour); reference bin is dry, below 0.1 mm/h. Previous-6-hour rain bins (mm, left-closed): total rain in hours t-6 to t-1 before the pickup (origin) or dropoff (destination) hour, excluding the current hour, requiring at least 5 of the 6 hours observed; reference bin is dry, below 0.1 mm. No temperature controls. Trips ending outside NYC (zone 265) are kept; their destination-rain indicators are absorbed by the destination-zone x hour FE, so they inform only origin-rain coefficients. Standard errors two-way clustered by pickup taxi zone and pickup date. Observations are OD cells (platform x PU zone x DO zone x pickup hour x dropoff hour) weighted by trips per cell, so estimates equal trip-level OLS. Fixed effects: platform, PU zone x pickup hour-of-day, DO zone x dropoff hour-of-day, month, day-of-week. No date fixed effect: identification includes variation across days within a month as well as across zones and hours. Access-a-Ride trips excluded. Significance: *** p<0.01, ** p<0.05, * p<0.1. N cells = 106,438,465 (after fixed-effect singleton removal); N trips = 171,429,675; months = 1,2,3,4,5,6,7,8,9,10,11,12. Estimated by exact batched FWL; validated against fixest::feols on Aug-Sep 2021 to 1e-6.
 \par\endgroup
 \ifdefined\ifclassloaded
 \@ifclassloaded{beamer}{\end{adjustbox}}{}
