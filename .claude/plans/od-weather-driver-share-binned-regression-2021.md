@@ -348,3 +348,17 @@ NEW folder `clean_data/od_weather_cells_2021_v2/`, identical plus `sum_log_fare`
 
 Make the FWL multi-outcome: demean X once and the y's together. Validate against
 `feols(c(...))` on Aug+Sep with the same criterion as Revision 3.
+
+## Revision 5 (user, 2026-10-01): per-mile prices and OD-pair FE
+
+Goal: separate price changes from trip-length composition.
+- Cells v3: `clean_data/od_weather_cells_2021_v3/` = v2 + `sum_log_miles`,
+  `sum_log_time` (new folder; v1/v2 untouched).
+- **Run P** (same FEs as spec B). Outcomes: log_fare_per_mile, log_pay_per_mile,
+  log_fare_per_min, log_pay_per_min, log_miles, log_minutes.
+  Exact identities: β(log fare/mile) = β(log fare) − β(log miles), etc.
+- **Run OD** (spec B FEs + `pu_zone_id^do_zone_id`). Outcomes: driver_share, log_share,
+  log_fare, log_pay, log_fare_per_mile, log_pay_per_mile, log_miles, log_minutes.
+  This compares the same route across weather conditions.
+- Same bins, weights, clustering (pickup zone + date), NA drops, batched FWL. Validate
+  each against feols on Aug+Sep with the Revision 3 criterion.

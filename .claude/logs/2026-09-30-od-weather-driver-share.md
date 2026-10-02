@@ -91,3 +91,7 @@ Plan: `~/.claude/plans/od-weather-driver-share-binned-regression-2021.md` (Sonne
 - Full year: 61.0 GB peak, 59 min. Outputs output/{reg,fig}/driver_share_decomp_2021.*
 - Identity log_share = log_pay − log_fare holds to ~1e-7 at the default demean tol (feols shows the same deviation); 1e-10 needs tol 1e-12 (~3 h). Judged negligible vs SEs ~1e-3; not rerun.
 - Pattern: origin current-hour rain raises fare and pay almost one-for-one (share flat) up to 40 mm/h; at ≥40, pay +0.335 vs fare +0.286. Origin prev-6h ≥50 mm: fare rises more than pay → share falls. Destination rain: fare/pay barely move; the small share increases come from pay rising slightly relative to fare.
+
+## 2026-10-01 — cleanup + commit 1bc6d75; Revision 5 started
+- Deleted the val_*/val4-6 outputs (none referenced by main.tex, which uses the augsep2021_r6 and 2021 outputs). Relabelled FE/cluster rows in both 2021 tables; corrected the N note. Committed on od-weather-driver-share. The untracked aug/augsep benchmark bin-count CSVs were left as they are.
+- Revision 5: per-mile/per-minute price outcomes (run P) and OD-pair FE version (run OD); cells v3 with Σlog miles/time.

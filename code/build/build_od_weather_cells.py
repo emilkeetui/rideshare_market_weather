@@ -131,7 +131,8 @@ def build_month(mm: str, weather: pd.DataFrame, con: duckdb.DuckDBPyConnection, 
                date_trunc('hour', dropoff_datetime) AS do_datetime_hour,
                driver_pay / base_passenger_fare AS driver_share,
                base_passenger_fare AS fare, driver_pay, trip_miles, trip_time,
-               ln(base_passenger_fare) AS ln_fare, ln(driver_pay) AS ln_pay
+               ln(base_passenger_fare) AS ln_fare, ln(driver_pay) AS ln_pay,
+               ln(trip_miles) AS ln_miles, ln(trip_time) AS ln_time
         FROM raw WHERE {all_pass}
     """)
     med_share = con.execute("SELECT median(driver_share) FROM trips").fetchone()[0]
@@ -145,7 +146,9 @@ def build_month(mm: str, weather: pd.DataFrame, con: duckdb.DuckDBPyConnection, 
                  sum(fare) AS sum_fare, sum(driver_pay) AS sum_driver_pay,
                  sum(trip_miles) AS sum_trip_miles, sum(trip_time)::DOUBLE AS sum_trip_time,
                  -- v2 additions (filters guarantee fare > 0 and driver_pay > 0, so ln() is finite)
-                 sum(ln_fare) AS sum_log_fare, sum(ln_pay) AS sum_log_pay
+                 sum(ln_fare) AS sum_log_fare, sum(ln_pay) AS sum_log_pay,
+                 -- v3 additions (filters: trip_miles > 0 and trip_time > 60 s, so ln() is finite)
+                 sum(ln_miles) AS sum_log_miles, sum(ln_time) AS sum_log_time
           FROM trips GROUP BY ALL)
         SELECT c.*, wp.precip_mm AS pu_precip_mm, wp.temp_c AS pu_temp_c,
                wd.precip_mm AS do_precip_mm, wd.temp_c AS do_temp_c
@@ -161,7 +164,7 @@ def build_month(mm: str, weather: pd.DataFrame, con: duckdb.DuckDBPyConnection, 
 
     # --- checks ---
     assert int(cells["n_trips"].sum()) == n_kept, f"sum(n_trips) {cells['n_trips'].sum():,} != filtered rows {n_kept:,}"
-    assert np.isfinite(cells[["sum_log_fare", "sum_log_pay"]].to_numpy()).all(), "non-finite log aggregates"
+    assert np.isfinite(cells[["sum_log_fare", "sum_log_pay", "sum_log_miles", "sum_log_time"]].to_numpy()).all(), "non-finite log aggregates"
     key = ["platform", "pu_zone_id", "do_zone_id", "datetime_hour", "do_datetime_hour"]
     assert not cells.duplicated(key).any(), "duplicate cell keys"
     # NaN gate: destination weather evaluated on in-NYC destinations only (DO 265 is NaN by construction).

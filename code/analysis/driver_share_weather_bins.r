@@ -40,8 +40,16 @@ stopifnot(engine %in% c("feols", "fwl"))
 # outcomes: "share" (default, driver_share only) or "decomp" = driver_share, log_fare, log_pay, log_share
 # estimated on the v2 cells (clean_data/od_weather_cells_2021_v2, which add sum_log_fare / sum_log_pay).
 outcomes <- if (length(args) >= 5) args[5] else "share"
-stopifnot(outcomes %in% c("share", "decomp"))
-decomp <- outcomes == "decomp"
+stopifnot(outcomes %in% c("share", "decomp", "permile", "od"))
+decomp <- outcomes != "share"            # TRUE for every multi-outcome mode
+use_od_fe <- outcomes == "od"            # adds the OD-pair FE (PU zone x DO zone)
+need_logs <- outcomes %in% c("decomp", "permile", "od")
+need_len  <- outcomes %in% c("permile", "od")   # v3 cells: sum_log_miles, sum_log_time
+ynames <- switch(outcomes,
+  share   = "driver_share",
+  decomp  = c("driver_share", "log_fare", "log_pay", "log_share"),
+  permile = c("log_fare_per_mile", "log_pay_per_mile", "log_fare_per_min", "log_pay_per_min", "log_miles", "log_minutes"),
+  od      = c("driver_share", "log_share", "log_fare", "log_pay", "log_fare_per_mile", "log_pay_per_mile", "log_miles", "log_minutes"))
 # Development only: restrict pickup dates (e.g. Sys.setenv(DSW_MAX_DATE = "2021-08-05")) for quick tests.
 max_date <- Sys.getenv("DSW_MAX_DATE", unset = "")
 
@@ -62,8 +70,8 @@ OUTSIDE_NYC_LABEL <- "outside_nyc"
 
 # ---- load (Arrow; 6h join done before collect) ---------------------------
 need <- c("platform", "pu_zone_id", "do_zone_id", "datetime_hour", "do_datetime_hour", "date",
-          "month", "dow", "pu_hod", "do_hod", "n_trips", "sum_driver_share", "pu_precip_mm", "do_precip_mm", if (decomp) c("sum_log_fare", "sum_log_pay"))
-cells_dir <- if (decomp) "clean_data/od_weather_cells_2021_v2" else "clean_data/od_weather_cells_2021"
+          "month", "dow", "pu_hod", "do_hod", "n_trips", "sum_driver_share", "pu_precip_mm", "do_precip_mm", if (need_logs) c("sum_log_fare", "sum_log_pay"), if (need_len) c("sum_log_miles", "sum_log_time"))
+cells_dir <- if (need_len) "clean_data/od_weather_cells_2021_v3" else if (decomp) "clean_data/od_weather_cells_2021_v2" else "clean_data/od_weather_cells_2021"
 ds <- open_dataset(file.path(cells_dir, sprintf("cells_2021-%02d.parquet", months))) |> filter(month %in% months)
 if (nzchar(max_date)) ds <- ds |> filter(date <= as.Date(max_date))
 ds <- ds |> select(all_of(need))
@@ -89,13 +97,25 @@ df$datetime_hour <- NULL; df$do_datetime_hour <- NULL
 # driver_share = cell mean of trip-level ratios; n_trips-weighted cell regression = trip-level OLS.
 df$driver_share <- df$sum_driver_share / df$n_trips
 df$sum_driver_share <- NULL
-if (decomp) {
+if (need_logs) {
   # trip-level means of ln(fare), ln(pay); log_share = mean ln(pay/fare) = log_pay - log_fare exactly.
   df$log_fare <- df$sum_log_fare / df$n_trips
   df$log_pay <- df$sum_log_pay / df$n_trips
   df$log_share <- df$log_pay - df$log_fare
   df$sum_log_fare <- NULL; df$sum_log_pay <- NULL
 }
+if (need_len) {
+  # trip_miles in miles, trip_time in SECONDS: minutes = seconds/60 (constant offset in logs only)
+  df$log_miles <- df$sum_log_miles / df$n_trips
+  df$log_minutes <- df$sum_log_time / df$n_trips - log(60)
+  df$log_fare_per_mile <- df$log_fare - df$log_miles
+  df$log_pay_per_mile <- df$log_pay - df$log_miles
+  df$log_fare_per_min <- df$log_fare - df$log_minutes
+  df$log_pay_per_min <- df$log_pay - df$log_minutes
+  df$sum_log_miles <- NULL; df$sum_log_time <- NULL
+}
+for (v in setdiff(intersect(c("driver_share", "log_fare", "log_pay", "log_share", "log_miles", "log_minutes", "log_fare_per_mile",
+                              "log_pay_per_mile", "log_fare_per_min", "log_pay_per_min"), names(df)), ynames)) df[[v]] <- NULL
 
 # ---- NA handling and match rates ------------------------------------------
 is_outside <- df$do_zone_id == OUTSIDE_NYC_ZONE
@@ -140,6 +160,7 @@ if (use_r6) stopifnot(!anyNA(df$pu_rain6h_bin), !anyNA(df$do_rain6h_bin))
 # integer ids for the two zone x hour-of-day FEs (hod < 24, so id = zone*100 + hod is unique).
 df$platform <- factor(df$platform)
 df$date_int <- as.integer(df$date); df$date <- NULL
+if (use_od_fe) df$od_fe <- df$pu_zone_id * 1000L + df$do_zone_id   # OD-pair FE (zones <= 265, so id fits an int)
 df$pu_fe <- df$pu_zone_id * 100L + as.integer(df$pu_hod)
 df$do_fe <- df$do_zone_id * 100L + as.integer(df$do_hod)
 df$pu_hod <- NULL; df$do_hod <- NULL; df$do_zone_id <- NULL
@@ -158,20 +179,23 @@ write.csv(bin_counts, sprintf("output/sum/driver_share_bin_counts_%s.csv", tag),
 
 ph("estimate start")
 # ---- estimate -----------------------------------------------------------
-fe_txt  <- "platform + pu_fe + do_fe + month + dow"
+fe_txt  <- paste0("platform + pu_fe + do_fe", if (use_od_fe) " + od_fe" else "", " + month + dow")
 rhs_cur <- 'i(pu_precip_bin, ref = "dry") + i(do_precip_bin, ref = c("dry", "outside_nyc"))'
 rhs_r6  <- paste(rhs_cur, '+ i(pu_rain6h_bin, ref = "dry") + i(do_rain6h_bin, ref = c("dry", "outside_nyc"))')
-ynames  <- if (decomp) c("driver_share", "log_fare", "log_pay", "log_share") else "driver_share"
-lhs_txt <- if (decomp) paste0("c(", paste(ynames, collapse = ", "), ")") else "driver_share"
-fml_bins <- as.formula(paste0(lhs_txt, " ~ ", if (use_r6) rhs_r6 else rhs_cur, " | ", fe_txt))
 gc()
 if (engine == "feols") {
-  tm <- system.time(
-    est <- feols(fml_bins, data = df, weights = ~n_trips, cluster = ~pu_zone_id + date_int,
-                 lean = TRUE, mem.clean = TRUE, nthreads = 16)
-  )
-  est_list <- if (decomp) lapply(seq_along(ynames), function(k) est[[k]]) else list(est)
-  names(est_list) <- ynames
+  # at most 4 outcomes per feols call (memory); the sample is identical across calls (same X and FEs)
+  rhs_use <- if (use_r6) rhs_r6 else rhs_cur
+  ch_list <- split(ynames, ceiling(seq_along(ynames) / 4))
+  est_list <- list(); tm <- c(elapsed = 0, user.self = 0, sys.self = 0)
+  for (ch in ch_list) {
+    f_ch <- as.formula(paste0(if (length(ch) > 1) paste0("c(", paste(ch, collapse = ", "), ")") else ch, " ~ ", rhs_use, " | ", fe_txt))
+    t1 <- system.time(e_ch <- feols(f_ch, data = df, weights = ~n_trips, cluster = ~pu_zone_id + date_int,
+                                    lean = TRUE, mem.clean = TRUE, nthreads = 16))
+    tm <- tm + t1[c("elapsed", "user.self", "sys.self")]
+    for (k in seq_along(ch)) est_list[[ch[k]]] <- if (length(ch) > 1) e_ch[[k]] else e_ch
+    rm(e_ch); gc()
+  }
   by_outcome <- lapply(est_list, function(e) {
     cts <- as.data.frame(coeftable(e)); cts$term <- rownames(cts)
     list(coeftable = cts, vcov = e$cov.scaled,
@@ -192,6 +216,7 @@ if (engine == "feols") {
   fwl_env$w <- df$n_trips
   fwl_env$bins <- df[, bvars]
   fwl_env$fe <- list(platform = as.integer(df$platform), pu_fe = df$pu_fe, do_fe = df$do_fe, month = as.integer(df$month), dow = as.integer(df$dow))
+  if (use_od_fe) fwl_env$fe$od_fe <- df$od_fe
   fwl_env$cl <- list(pu_zone_id = df$pu_zone_id, date_int = df$date_int)
   fwl_refs <- setNames(lapply(bvars, function(b) if (startsWith(b, "do_")) c("dry", OUTSIDE_NYC_LABEL) else "dry"), bvars)
   rm(df); gc()   # free the data frame before the FWL fit (fwl_fit consumes fwl_env)
@@ -227,17 +252,25 @@ dict <- c(pu_precip_bin = "Origin rain, current hour (mm/h)", do_precip_bin = "D
 n_cells_note <- if (engine == "fwl") fit_info$nobs else n_cells
 n_trips_note <- if (engine == "fwl") fit_info$n_trips_est else n_trips
 notes_txt <- paste0(
-  if (decomp) paste0("Dependent variables (trip level, cell means): driver share = driver_pay / base_passenger_fare; log fare = ln(base_passenger_fare); log pay = ln(driver_pay); log share = ln(driver_pay / base_passenger_fare) = log pay - log fare exactly, so the log-share coefficient equals the log-pay coefficient minus the log-fare coefficient. ",
-                     "Coefficients on the log outcomes are in log points (x100 is approximately a percent change). ",
-                     "Log fare and log pay also absorb changes in trip length and duration (composition), whereas the share is a ratio of the two on the same trips. ")
-  else "Dependent variable: driver_share = driver_pay / base_passenger_fare (trip level, cell mean). ",
+  switch(outcomes,
+    share = "Dependent variable: driver_share = driver_pay / base_passenger_fare (trip level, cell mean). ",
+    decomp = paste0("Dependent variables (trip level, cell means): driver share = driver_pay / base_passenger_fare; log fare = ln(base_passenger_fare); log pay = ln(driver_pay); log share = ln(driver_pay / base_passenger_fare) = log pay - log fare exactly, so the log-share coefficient equals the log-pay coefficient minus the log-fare coefficient. ",
+                    "Coefficients on the log outcomes are in log points (x100 is approximately a percent change). ",
+                    "Log fare and log pay also absorb changes in trip length and duration (composition), whereas the share is a ratio of the two on the same trips. "),
+    permile = paste0("Dependent variables (trip level, cell means of natural logs): log fare per mile = ln(base_passenger_fare / trip_miles); log pay per mile = ln(driver_pay / trip_miles); log fare per minute = ln(base_passenger_fare / trip duration in minutes); log pay per minute likewise; log miles = ln(trip_miles); log minutes = ln(trip duration in minutes). ",
+                     "Hence log fare = log fare per mile + log miles, so the log-fare coefficient in the previous table equals the per-mile coefficient plus the log-miles coefficient. ",
+                     "Coefficients are in log points (x100 is approximately a percent change). Per-minute outcomes use trip_time in seconds (a constant offset only, absorbed by the fixed effects, so coefficients are unaffected). "),
+    od = paste0("Dependent variables (trip level, cell means): driver share = driver_pay / base_passenger_fare; log share = ln(driver_pay / base_passenger_fare) = log pay - log fare; log fare and log pay; log fare per mile and log pay per mile (ln of fare or pay divided by trip_miles); log miles = ln(trip_miles); log minutes = ln(trip duration in minutes). ",
+                "Coefficients on the log outcomes are in log points (x100 is approximately a percent change). ",
+                "Identification is within route: the specification adds an origin-destination-pair (PU zone x DO zone) fixed effect, so rain coefficients compare the same OD pair across hours and days, net of route composition. "),
+    stop("unknown outcomes mode")),
   "Current-hour rain bins (mm/h, left-closed) at origin (pickup hour) and destination (dropoff hour); reference bin is dry, below 0.1 mm/h. ",
   if (use_r6) "Previous-6-hour rain bins (mm, left-closed): total rain in hours t-6 to t-1 before the pickup (origin) or dropoff (destination) hour, excluding the current hour, requiring at least 5 of the 6 hours observed; reference bin is dry, below 0.1 mm. " else "",
   "No temperature controls. ",
   "Trips ending outside NYC (zone 265) are kept; their destination-rain indicators are absorbed by the destination-zone x hour FE, so they inform only origin-rain coefficients. ",
   "Standard errors two-way clustered by pickup taxi zone and pickup date. ",
   "Observations are OD cells (platform x PU zone x DO zone x pickup hour x dropoff hour) weighted by trips per cell, so estimates equal trip-level OLS. ",
-  "Fixed effects: platform, PU zone x pickup hour-of-day, DO zone x dropoff hour-of-day, month, day-of-week. ",
+  if (use_od_fe) "Fixed effects: platform, PU zone x pickup hour-of-day, DO zone x dropoff hour-of-day, OD pair (PU zone x DO zone), month, day-of-week. " else "Fixed effects: platform, PU zone x pickup hour-of-day, DO zone x dropoff hour-of-day, month, day-of-week. ",
   "No date fixed effect: identification includes variation across days within a month as well as across zones and hours. ",
   "Access-a-Ride trips excluded. Significance: *** p<0.01, ** p<0.05, * p<0.1. ",
   sprintf("N cells = %s%s; N trips = %s; months = %s.", format(n_cells_note, big.mark = ","), if (engine == "fwl") " (after fixed-effect singleton removal)" else "", format(n_trips_note, big.mark = ","), paste(months, collapse = ",")))
@@ -285,47 +318,76 @@ if (!decomp) {
   if (engine == "feols") print(etable(est, dict = dict, fitstat = ~ n + r2, signif.code = c("***" = 0.01, "**" = 0.05, "*" = 0.10)))
   cat("coefficients (full precision):\n"); print(setNames(ct$Estimate, ct$term), digits = 10)
 } else {
-  # ---- decomposition outputs: 4-column table, fare-vs-pay figure, rds -------------
-  dtag <- sub("_decomp$", "", tag)
-  # identity check: beta(log_share) = beta(log_pay) - beta(log_fare)
-  e_share <- by_outcome$log_share$coeftable$Estimate
-  e_diff <- by_outcome$log_pay$coeftable$Estimate - by_outcome$log_fare$coeftable$Estimate
-  id_abs <- max(abs(e_share - e_diff)); id_rel <- max(abs(e_share - e_diff) / pmax(abs(e_share), 1e-12))
-  cat(sprintf("IDENTITY log_share = log_pay - log_fare: max abs diff %.3g, max rel diff %.3g (tolerance 1e-10)\n", id_abs, id_rel))
+  # ---- multi-outcome outputs: table, figure, rds -------------------------------------
+  dtag <- sub("_(decomp|permile|od)$", "", tag)
+  # identities among the outcomes (only those whose members are present)
+  ids <- list()
+  b_est <- function(o) by_outcome[[o]]$coeftable$Estimate
+  idrec <- function(name, d, ref) {
+    ids[[name]] <<- c(max_abs = max(abs(d)), max_rel = max(abs(d) / pmax(abs(ref), 1e-12)))
+    cat(sprintf("IDENTITY %s: max abs diff %.3g, max rel diff %.3g\n", name, ids[[name]][["max_abs"]], ids[[name]][["max_rel"]]))
+  }
+  if (all(c("log_share", "log_pay", "log_fare") %in% ynames))
+    idrec("log_share = log_pay - log_fare", b_est("log_share") - (b_est("log_pay") - b_est("log_fare")), b_est("log_share"))
+  if (all(c("log_fare_per_mile", "log_fare", "log_miles") %in% ynames))
+    idrec("log_fare_per_mile = log_fare - log_miles", b_est("log_fare_per_mile") - (b_est("log_fare") - b_est("log_miles")), b_est("log_fare_per_mile"))
+  if (all(c("log_pay_per_mile", "log_pay", "log_miles") %in% ynames))
+    idrec("log_pay_per_mile = log_pay - log_miles", b_est("log_pay_per_mile") - (b_est("log_pay") - b_est("log_miles")), b_est("log_pay_per_mile"))
+  if (all(c("log_fare_per_min", "log_fare_per_mile", "log_miles", "log_minutes") %in% ynames))
+    idrec("log_fare_per_min = log_fare_per_mile + log_miles - log_minutes", b_est("log_fare_per_min") - (b_est("log_fare_per_mile") + b_est("log_miles") - b_est("log_minutes")), b_est("log_fare_per_min"))
   if (engine == "fwl") {
     fit$outcomes <- fit$outcomes[ynames]
-    dec_tex <- sprintf("output/reg/driver_share_decomp_%s.tex", dtag)
+    col_lab_all <- c(driver_share = "driver\\_share", log_share = "log share", log_fare = "log fare", log_pay = "log pay",
+                     log_fare_per_mile = "log fare / mile", log_pay_per_mile = "log pay / mile",
+                     log_fare_per_min = "log fare / min", log_pay_per_min = "log pay / min",
+                     log_miles = "log miles", log_minutes = "log minutes")
+    fe_lab_use <- if (use_od_fe) c(fe_lab[1:3], "OD pair (PU x DO zone)", fe_lab[4:5]) else fe_lab
+    dec_tex <- sprintf("output/reg/driver_share_%s_%s.tex", outcomes, dtag)
     notes_fwl <- paste0(notes_txt, " Estimated by exact batched FWL; validated against fixest::feols on Aug-Sep 2021 to 1e-6.")
-    fwl_etable_tex_multi(fit, dict = dict, col_labels = c("driver\\_share", "log fare", "log pay", "log share"),
-                         tag = tag, notes = notes_fwl, path = dec_tex, fe_labels = fe_lab, cluster_label = cl_lab)
+    fwl_etable_tex_multi(fit, dict = dict, col_labels = unname(col_lab_all[ynames]),
+                         tag = tag, notes = notes_fwl, path = dec_tex, fe_labels = fe_lab_use, cluster_label = cl_lab)
     wrap_for_beamer(dec_tex)
-    # figure: log fare vs log pay, dodged, 95% CI, reference (dry) at 0
-    pdf <- do.call(rbind, lapply(c("log_fare", "log_pay"), function(o) {
+    # figure: dodged coefficients with 95% CI, reference (dry) at 0
+    fig_sets <- switch(outcomes,
+      decomp  = list(`Log points` = c(log_fare = "Log fare", log_pay = "Log driver pay")),
+      permile = list(`Log points` = c(log_fare_per_mile = "Log fare per mile", log_pay_per_mile = "Log driver pay per mile")),
+      od      = list(`Driver share (level)` = c(driver_share = "Driver share"),
+                     `Log points` = c(log_fare_per_mile = "Log fare per mile", log_pay_per_mile = "Log driver pay per mile")))
+    cols_use <- c("Log fare" = "#1b6ca8", "Log driver pay" = "#d95f02", "Log fare per mile" = "#1b6ca8",
+                  "Log driver pay per mile" = "#d95f02", "Driver share" = "#2e7d32")
+    pdf <- do.call(rbind, lapply(names(fig_sets), function(g) do.call(rbind, lapply(names(fig_sets[[g]]), function(o) {
       cto <- by_outcome[[o]]$coeftable
       do.call(rbind, lapply(names(facets), function(v) {
         rows <- cto[startsWith(cto$term, paste0(v, "::")), ]
         b <- sub(paste0(v, "::"), "", rows$term, fixed = TRUE)
-        d <- data.frame(outcome = o, var = v, bin = c(b, REF), est = c(rows$Estimate, 0), se = c(rows$`Std. Error`, 0))
+        d <- data.frame(group = g, outcome = fig_sets[[g]][[o]], var = v, bin = c(b, REF), est = c(rows$Estimate, 0), se = c(rows$`Std. Error`, 0))
         d$bin <- factor(d$bin, levels = lv[[v]]); d$facet <- factor(facets[[v]], levels = facets); d
       }))
-    }))
-    pdf$outcome <- factor(pdf$outcome, levels = c("log_fare", "log_pay"), labels = c("Log fare", "Log driver pay"))
+    }))))
+    pdf$outcome <- factor(pdf$outcome, levels = unique(pdf$outcome)); pdf$group <- factor(pdf$group, levels = names(fig_sets))
     pdf$lo <- pdf$est - 1.96 * pdf$se; pdf$hi <- pdf$est + 1.96 * pdf$se
-    pd <- position_dodge(width = 0.6)
     pp <- ggplot(pdf, aes(bin, est, colour = outcome)) +
       geom_hline(yintercept = 0, linewidth = 0.3) +
-      geom_pointrange(aes(ymin = lo, ymax = hi), size = 0.25, position = pd) +
-      scale_colour_manual(values = c("Log fare" = "#1b6ca8", "Log driver pay" = "#d95f02"), name = NULL) +
-      facet_wrap(~facet, scales = "free_x", ncol = 2) +
-      labs(x = "Bin", y = "Coefficient (log points, vs. dry bin)") +
+      geom_pointrange(aes(ymin = lo, ymax = hi), size = 0.25, position = position_dodge(width = 0.6)) +
+      scale_colour_manual(values = cols_use[levels(pdf$outcome)], name = NULL) +
+      labs(x = "Bin", y = "Coefficient (vs. dry bin)") +
       theme_classic(base_size = 10) + theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
-    ggsave(sprintf("output/fig/driver_share_decomp_%s.png", dtag), pp, width = 10, height = 7, dpi = 300)
-    saveRDS(list(by_outcome = by_outcome, nobs = fit_info$nobs, n_trips_est = fit_info$n_trips_est, K = fit_info$K, K_raw = fit_info$K_raw,
+    if (length(fig_sets) > 1) {
+      pp <- pp + facet_grid(group ~ facet, scales = "free")
+      fig_w <- 16; fig_h <- 8
+    } else {
+      pp <- pp + facet_wrap(~facet, scales = "free_x", ncol = 2)
+      fig_w <- 10; fig_h <- 7
+    }
+    ggsave(sprintf("output/fig/driver_share_%s_%s.png", outcomes, dtag), pp, width = fig_w, height = fig_h, dpi = 300)
+    saveRDS(list(by_outcome = by_outcome, nobs = fit_info$nobs, n_trips_est = fit_info$n_trips_est, n_singletons = fit_info$n_singletons,
+                 n_cells_before_singletons = n_cells, n_trips_before_singletons = n_trips,
+                 K = fit_info$K, K_raw = fit_info$K_raw, fe_sizes = fit_info$fe_sizes, nested = fit_info$nested,
                  adj_K = fit_info$adj_K, adj_G = fit_info$adj_G, G = fit_info$G, df_t = fit_info$df_t,
                  timings = c(total = fit_info$seconds, demean = fit_info$demean_s, xwx = fit_info$cross_s, vcov = fit_info$vcov_s),
-                 identity = c(max_abs = id_abs, max_rel = id_rel), months = months, tag = tag,
+                 identity = ids, months = months, tag = tag, outcomes = ynames,
                  n_cells_na_dropped = n_cells_na, n_trips_na_dropped = n_trips_na),
-            sprintf("output/reg/driver_share_decomp_%s.rds", dtag))
+            sprintf("output/reg/driver_share_%s_%s.rds", outcomes, dtag))
   }
   for (o in ynames) { cat("==", o, "\n"); print(setNames(by_outcome[[o]]$coeftable$Estimate, by_outcome[[o]]$coeftable$term), digits = 8) }
 }

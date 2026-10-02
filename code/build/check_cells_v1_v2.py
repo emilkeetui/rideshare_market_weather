@@ -16,10 +16,15 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[2]
 V1, V2 = ROOT / "clean_data" / "od_weather_cells_2021", ROOT / "clean_data" / "od_weather_cells_2021_v2"
-months = sys.argv[1].split(",") if len(sys.argv) > 1 else [f"{m:02d}" for m in range(1, 13)]
+months = sys.argv[1].split(",") if len(sys.argv) > 1 and sys.argv[1] else [f"{m:02d}" for m in range(1, 13)]
+# optional 2nd arg "v2v3": compare v2 (A) with v3 (B; adds sum_log_miles, sum_log_time) instead of v1 vs v2
+MODE = sys.argv[2] if len(sys.argv) > 2 else "v1v2"
+LOGS_B = ["sum_log_fare", "sum_log_pay"] + (["sum_log_miles", "sum_log_time"] if MODE == "v2v3" else [])
+if MODE == "v2v3":
+    V1, V2 = ROOT / "clean_data" / "od_weather_cells_2021_v2", ROOT / "clean_data" / "od_weather_cells_2021_v3"
 # pu_hod/do_hod (naive wall-clock hours) disambiguate the 38 March DST cells whose tz-aware keys collide
 KEYS = ["platform", "pu_zone_id", "do_zone_id", "datetime_hour", "do_datetime_hour", "pu_hod", "do_hod"]
-SUMS = ["n_trips", "sum_driver_share", "sum_fare", "sum_driver_pay", "sum_trip_miles", "sum_trip_time"]
+SUMS = ["n_trips", "sum_driver_share", "sum_fare", "sum_driver_pay", "sum_trip_miles", "sum_trip_time"] + (["sum_log_fare", "sum_log_pay"] if MODE == "v2v3" else [])
 OTHER = ["pu_precip_mm", "do_precip_mm", "month", "dow", "doy", "date"]
 con = duckdb.connect()
 rows = []
@@ -35,7 +40,7 @@ for mm in months:
             FROM read_parquet('{f1}') a FULL JOIN read_parquet('{f2}') b ON {on}"""
     r = con.execute(q).fetchdf().iloc[0].to_dict()
     tot = con.execute(f"SELECT sum(n_trips), sum(sum_driver_share) FROM read_parquet('{f1}')").fetchone()
-    tot2 = con.execute(f"SELECT sum(n_trips), sum(sum_driver_share), min(sum_log_fare), min(sum_log_pay), sum(CASE WHEN isfinite(sum_log_fare) AND isfinite(sum_log_pay) THEN 0 ELSE 1 END) FROM read_parquet('{f2}')").fetchone()
+    tot2 = con.execute(f"SELECT sum(n_trips), sum(sum_driver_share), min(sum_log_fare), min(sum_log_pay), sum(CASE WHEN {' AND '.join(f'isfinite({c})' for c in LOGS_B)} THEN 0 ELSE 1 END) FROM read_parquet('{f2}')").fetchone()
     # exact dup-key check on v2 keys
     dups = con.execute(f"SELECT count(*) - count(DISTINCT ({', '.join(KEYS)})) FROM read_parquet('{f2}')").fetchone()[0]
     row = {"month": mm, "rows_v1": n1, "rows_v2": n2, "n_join": int(r["n_join"]), "n_unmatched": int(r["n_unmatched"]),
@@ -49,7 +54,7 @@ for mm in months:
     rows.append(row)
     print(mm, "IDENTICAL" if ok else "DIFFERENT", {k: row[k] for k in ("rows_v1", "rows_v2", "n_unmatched", "n_other_neq")},
           "max abs diffs:", {c: row[f"d_{c}"] for c in SUMS})
-out = ROOT / "output" / "sum" / "od_cells_v1_v2_check.csv"
+out = ROOT / "output" / "sum" / ("od_cells_v2_v3_check.csv" if MODE == "v2v3" else "od_cells_v1_v2_check.csv")
 pd.DataFrame(rows).to_csv(out, index=False)
 print("written", out)
 if not all(r["identical"] for r in rows):
