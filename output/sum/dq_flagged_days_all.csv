@@ -1,0 +1,26 @@
+date,platform,n_trips,centered_median_28d,ratio,rule,explanation
+2021-02-01,Uber,137808,289867.0,0.4754180365477961,<50% of median,Snowstorm
+2026-01-25,Uber,235119,509915.0,0.46109449614151377,<50% of median,Winter Storm Fern
+2026-02-23,Uber,93846,503703.0,0.1863121720537698,<50% of median,Blizzard / NYC travel ban
+2021-02-01,Lyft,38594,107543.0,0.3588704053262416,<50% of median,Snowstorm
+2022-01-29,Lyft,56957,138742.0,0.41052457078606336,<50% of median,Nor'easter
+2026-01-25,Lyft,87157,196079.0,0.44449941095170825,<50% of median,Winter Storm Fern
+2026-02-23,Lyft,66990,204361.0,0.32780227147058394,<50% of median,Blizzard / NYC travel ban
+2021-02-01,Via,544,3326.0,0.1635598316295851,<50% of median,Snowstorm
+2021-10-12,Via,0,0.0,,zero,unexplained
+2021-10-13,Via,0,0.0,,zero,unexplained
+2021-10-14,Via,0,0.0,,zero,unexplained
+2021-10-15,Via,0,0.0,,zero,unexplained
+2021-10-16,Via,0,0.0,,zero,unexplained
+2021-10-17,Via,0,0.0,,zero,unexplained
+2021-10-18,Via,0,0.0,,zero,unexplained
+2021-10-19,Via,0,0.0,,zero,unexplained
+2021-10-20,Via,0,0.0,,zero,unexplained
+2021-10-21,Via,0,0.0,,zero,unexplained
+2021-10-22,Via,0,0.0,,zero,unexplained
+2021-10-23,Via,0,0.0,,zero,unexplained
+2021-10-24,Via,0,0.0,,zero,unexplained
+2021-10-25,Via,0,0.0,,zero,unexplained
+2021-02-01,ALL,176946,398476.0,0.44405685662373645,<50% of median,Snowstorm
+2026-01-25,ALL,322276,704259.0,0.4576100553915534,<50% of median,Winter Storm Fern
+2026-02-23,ALL,160836,700377.0,0.22964203564651609,<50% of median,Blizzard / NYC travel ban

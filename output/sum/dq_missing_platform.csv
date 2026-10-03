@@ -1,0 +1,10 @@
+Variable,Platform,2020,2021,2022,2023,2024,2025,2026
+access_a_ride_flag,Lyft,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+access_a_ride_flag,Uber,99.9,100.0,100.0,80.7,0.0,0.0,0.0
+access_a_ride_flag,Via,0.0,0.0,--,--,--,--,--
+on_scene_datetime,Lyft,99.9,99.9,99.9,99.8,99.7,16.1,0.0
+on_scene_datetime,Uber,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+on_scene_datetime,Via,98.9,99.2,--,--,--,--,--
+originating_base_num,Lyft,99.9,99.9,99.9,99.8,99.7,99.7,99.6
+originating_base_num,Uber,0.1,0.0,0.0,0.0,0.0,0.0,0.0
+originating_base_num,Via,98.9,99.2,--,--,--,--,--
