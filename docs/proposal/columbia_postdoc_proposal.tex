@@ -1,0 +1,123 @@
+% ============================================================
+% Columbia Climate School Postdoctoral Research Program -- Research Proposal
+% Format (program rules): max 5 pages excl. references; double-spaced;
+% 1-inch margins; minimum 11pt standard font; title required.
+% ============================================================
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{setspace}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[hidelinks]{hyperref}
+\usepackage{natbib}
+
+\begin{document}
+\doublespacing
+
+\begin{center}
+{\large\bfseries Who Pays When the Streets Flood?}\\[2pt]
+{\itshape Platform Market Power and the Incidence of Storms in New York City's Ride-Hail Market, 2019--2026}
+\end{center}
+
+\noindent\textbf{Prepared by:} Emil Kee-Tui [affiliation] \textperiodcentered{} \textbf{Co-author:} Xibo Wan [affiliation]\\
+\textbf{Proposed mentor:} Dr.\ Jacqueline M.\ Klopp, Director, Center for Sustainable Urban Development, Columbia Climate School; [second mentor, to be confirmed]
+
+\section{Motivation and Research Question}
+
+Hurricanes and tropical storms are increasing in frequency due to climate change and are a major cost associated with the damages of climate. They are generally harmful in aggregate, but they have an ambiguous and uneven effect on firms and consumers, potentially benefiting some firms. Hurricanes trigger acute, localized scarcity: flooded roads, driver withdrawal, and surging demand to evacuate or reach safety, and ridesharing platforms use surge pricing during exactly these moments. During Hurricane Ida (1 September 2021), fares reached about three times the TLC pay floor, while the driver's share of the fare fell from 89\% to 72\% at Uber and to 45\% at Lyft.
+
+We study how every hurricane and tropical storm that struck New York City from 2019 to 2026 affected ridesharing fares, rides taken, surge pricing, and the distribution of welfare between riders, drivers, and platforms. \textbf{Core question:} Does surge efficiently ration scarce rides and pull in supply, or does it extract rents from riders with no good alternative? Because transactions are spread over a wide temporal and geographic area, we can compare places before and after each storm, and places more and less affected by it. The NYC rideshare market is large in terms of transactions, employment, and value, so understanding it has implications for millions of people: in 2026 it was valued at \$5.2 billion, employed over 80,000 drivers, and facilitated hundreds of thousands of daily trips.
+
+\section{Related Literature and Theoretical Framing}
+
+Surge pricing reduces wasteful driver search \citep{castillo2017} and raises rider but lowers driver surplus \citep{castillo2025}; rain shifts taxi demand and labor supply \citep{farber2015,brodeur2018}; platforms hold wage-setting power \citep{dube2020}; and hurricane damage is large \citep{kahn2005,hsiang2014,deryugina2017}. But these literatures study routine, reversible imbalances, where riders have time and alternatives, or aggregate, longer-run costs. None study surge pricing when demand is acutely inelastic (life-safety and evacuation trips), supply is physically blocked (flooded, impassable roads), and anti-price-gouging law may be legally activated: the setting where ``surge equals efficient matching'' may invert.
+
+We analyze storms through platform market power in the rider market and the driver market. When both markets are competitive, platforms offer drivers a share of fares equal to their opportunity cost of driving. Market power in the rider market lets platforms charge a higher fare; wage-setting power over drivers lets them reduce the driver's share and capture a greater percentage of fare increases. With demand elasticity $\varepsilon_D$, driver supply elasticity $\varepsilon_S$ and platform cost $c$, the driver's share is
+\begin{equation}
+\text{DriverShare} = \frac{\text{driver\_pay}}{\text{base\_passenger\_fare}} = \frac{1 - 1/\varepsilon_D - c/p}{1 + 1/\varepsilon_S}.
+\end{equation}
+Hurricanes increase platform power in the rider market if they reduce competition from alternative transport (subway closures, walking becoming more dangerous than driving) or if rideshares are especially suited for evacuations. They reduce drivers' market power if drivers' outside employment options close, and increase it if drivers demand higher wages to accept the risk of driving during a hurricane. Where the TLC pay floor binds, the share falls mechanically as fares rise, so share results use trips with a slack floor. The pass-through elasticity of driver share to surge is the key structural object.
+
+\begin{table}[h]
+\centering
+\begin{singlespace}
+\begin{tabular}{lll}
+\toprule
+Signature & Efficient surge & Platform rent extraction \\
+\midrule
+Driver pay share vs.\ surge & Flat & Falling \\
+Supply response to surge ($t+1$) & Rises & Flat or falls \\
+Wait time vs.\ price & Improves & Unchanged, high price \\
+Mode substitution (taxi share) & Modest & Large, priced out \\
+Transit competition during surge & Unchanged (demand rose) & Reduced (rider-market power) \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\end{table}
+
+\section{Empirical Strategy}
+
+\textbf{Multi-storm stacked event study.} We pool every storm of the HVFHV era (2019--2026), including Isaias, Elsa, Henri and Ida, timed from NOAA HURDAT2 and radar:
+\begin{equation}
+Y_{z,s,t} = \alpha_{z,s} + \gamma_{s,t} + \sum_{k \neq -1} \beta_k \cdot \text{FloodExposed}_{z,s} \times \mathbb{1}[t = \text{EventHour}_s + k] + X_{z,t}\,\delta + \varepsilon_{z,s,t}
+\end{equation}
+The unit is taxi zone $\times$ hour, stacked by storm. FloodExposed is continuous flood exposure from the SLOSH/bathtub layer, radar rainfall and 311 reports; $\beta_k$ traces out the dynamic effect $k$ hours from landfall, and leads capture anticipatory evacuation demand. Outcomes are the surge proxy (fare per mile relative to the zone's non-storm baseline for that hour of the week), take rate, wait time and mode shares. Stacking avoids staggered-adoption bias in two-way fixed effects \citep{cengiz2019,callaway2021} and tests whether pricing algorithms changed across storms.
+
+\textbf{Triple difference.} A simple DiD cannot separate ``this zone always behaves differently during storms'' from ``this zone is specifically flooded once landfall occurs''; the triple interaction Flooded $\times$ StormPeriod $\times$ PostLandfall isolates the latter.
+
+\textbf{Supply--demand decomposition.} $\text{SurgeProxy} = \beta_1 \cdot \text{DemandProxy} + \beta_2 \cdot \text{SupplyProxy} + \text{FE}$, with cellphone population present and net outflow (normalized to each zone's pre-storm baseline) as demand and dispatch delay (pickup minus request time) as supply. Second-stage test: does surge at $t$ actually raise supply at $t+1$? Within origin--destination pairs, $\log \text{share} = \log \text{pay} - \log \text{fare}$ splits each share effect into fare and pay.
+
+\textbf{Storm-track instrument.} Flooded zones may differ in supply, income or drainage even without a storm, so we instrument flood exposure with the zone's distance from the storm track and the track's angle to the coastline, controlling for elevation, distance to coast and rainfall.
+
+\textbf{Inference and welfare.} Standard errors are clustered by zone, with storm-level wild cluster bootstrap \citep{cameron2008}; storms with and without a governor's emergency declaration (General Business Law \S396-r) are compared. Welfare separates transfers ($\Delta$Fare $\times$ TripVolume, split into $\Delta$DriverPay and $\Delta$PlatformMargin), deadweight loss from unmet demand (a taxi vs.\ HVFHS vs.\ no-trip choice model) and driver risk compensation.
+
+\section{Data and Preliminary Evidence}
+
+All data are in hand. The fare, driver's share of fare, and platform's share of fare from 2019 until 2026 are directly observed in the NYC High Volume For-Hire Vehicle trip records, which rideshare companies are legally required to submit; yellow and green taxi records give the substitution benchmark. Competition from alternative transport is measured with MTA bus and subway alerts recording the time and route of each delay or closure, and cellphone data measure population present by zone and hour. Storm tracks and rainfall come from NOAA and the National Weather Service; storm surge, rainfall, elevation, FEMA floodplain and 311 data give the water level across the city.
+
+\textbf{Preliminary evidence (2021).} In a 106.4-million-cell origin--destination--hour panel (171.4 million trips) merged with radar rainfall, fare and driver pay move one for one in ordinary rain. After more than 50 mm over six hours, fare outpaces pay and the driver share falls 7--8 percentage points. The TLC pay floor bound on about 15\% of Uber and 62\% of Lyft trips in September 2021.
+
+\section{Qualifications}
+
+[Applicant: PhD field, institution, year.] [Xibo Wan: background.] We have built the full pipeline in Python and an exact batched Frisch--Waugh--Lovell estimator in R that matches \texttt{fixest} to $10^{-9}$ on 106 million observations.
+
+\section{Timeline and Deliverables}
+
+\begin{enumerate}
+\item Months 1--4: finalize the storm sample and pull matching TLC/HVFHS months; build the flood exposure layer (SLOSH/FEMA, tide gauge and elevation); construct the zone-hour panel.
+\item Months 5--12: estimate the event study/DiD, decomposition and pass-through elasticity; Paper 1 submitted; Fall symposium.
+\item Months 13--24 (extension): storm-track IV and welfare model; Paper 2 on who bears storm costs; policy brief for the TLC and MTA.
+\end{enumerate}
+
+\section{Expected Contributions}
+
+\begin{itemize}
+\item The first test of surge-pricing efficiency under acutely inelastic, life-safety demand combined with physically constrained supply.
+\item A structural pass-through elasticity (driver pay share vs.\ surge) as the headline estimate, not just a reduced-form price effect, with identification beyond a flood DiD: a storm-track IV and a multi-storm stacked design.
+\item For adaptation and sustainable development: evidence on whether algorithmic pricing helps or hinders mobility in extreme weather and who bears the cost, transferable to flood-exposed cities of the Global South wherever trip reporting is mandated, and relevant to TLC pay rules, price-gouging law and transit-suspension decisions.
+\end{itemize}
+
+\section{Mentoring and Requested Support}
+
+Dr.\ Klopp (CSUD) on transport governance and agency partners for the policy brief; a second mentor in economics [to be confirmed]; feedback on the framework and stacked design before estimation at scale.
+
+\clearpage
+\begin{singlespace}
+\begin{thebibliography}{99}
+\bibitem[Brodeur and Nield(2018)]{brodeur2018} Brodeur, A. and K. Nield (2018). ``An Empirical Analysis of Taxi, Lyft and Uber Rides: Evidence from Weather Shocks in NYC.'' \textit{Journal of Economic Behavior \& Organization} 152: 1--16.
+\bibitem[Callaway and Sant'Anna(2021)]{callaway2021} Callaway, B. and P. H. C. Sant'Anna (2021). ``Difference-in-Differences with Multiple Time Periods.'' \textit{Journal of Econometrics} 225(2): 200--230.
+\bibitem[Cameron et~al.(2008)]{cameron2008} Cameron, A. C., J. B. Gelbach and D. L. Miller (2008). ``Bootstrap-Based Improvements for Inference with Clustered Errors.'' \textit{Review of Economics and Statistics} 90(3): 414--427.
+\bibitem[Castillo(2025)]{castillo2025} Castillo, J. C. (2025). ``Who Benefits from Surge Pricing?'' \textit{Econometrica} 93(5): 1811--1854.
+\bibitem[Castillo et~al.(2017)]{castillo2017} Castillo, J. C., D. Knoepfle and E. G. Weyl (2017). ``Surge Pricing Solves the Wild Goose Chase.'' \textit{Proceedings of the 2017 ACM Conference on Economics and Computation}: 241--242.
+\bibitem[Cengiz et~al.(2019)]{cengiz2019} Cengiz, D., A. Dube, A. Lindner and B. Zipperer (2019). ``The Effect of Minimum Wages on Low-Wage Jobs.'' \textit{Quarterly Journal of Economics} 134(3): 1405--1454.
+\bibitem[Deryugina(2017)]{deryugina2017} Deryugina, T. (2017). ``The Fiscal Cost of Hurricanes: Disaster Aid versus Social Insurance.'' \textit{American Economic Journal: Economic Policy} 9(3): 168--198.
+\bibitem[Dube et~al.(2020)]{dube2020} Dube, A., J. Jacobs, S. Naidu and S. Suri (2020). ``Monopsony in Online Labor Markets.'' \textit{American Economic Review: Insights} 2(1): 33--46.
+\bibitem[Farber(2015)]{farber2015} Farber, H. S. (2015). ``Why You Can't Find a Taxi in the Rain and Other Labor Supply Lessons from Cab Drivers.'' \textit{Quarterly Journal of Economics} 130(4): 1975--2026.
+\bibitem[Hsiang and Jina(2014)]{hsiang2014} Hsiang, S. M. and A. S. Jina (2014). ``The Causal Effect of Environmental Catastrophe on Long-Run Economic Growth: Evidence from 6,700 Cyclones.'' NBER Working Paper 20352.
+\bibitem[Kahn(2005)]{kahn2005} Kahn, M. E. (2005). ``The Death Toll from Natural Disasters: The Role of Income, Geography, and Institutions.'' \textit{Review of Economics and Statistics} 87(2): 271--284.
+\end{thebibliography}
+\end{singlespace}
+
+\end{document}
