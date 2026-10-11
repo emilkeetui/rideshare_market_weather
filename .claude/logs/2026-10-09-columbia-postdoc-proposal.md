@@ -51,3 +51,8 @@ https://claude.ai/code/artifact/00d86dd2-4bda-43cb-b4d5-788eb150fa8e
 - Preliminary evidence split into its own section after the strategy.
 - Assumption flagged to user: X_{z,t} defined as hourly zone rainfall (was undefined). "k hours from landfall" -> "from the event hour" (consistent with Rev. 0 decision).
 - Compiles, 0 errors/overfull; body ends p.5, refs p.6. Not committed.
+
+## Revision 5 (user, 2026-10-11): accurate Ida driver shares + preliminary-evidence spec
+- Recomputed from raw 2021-09 HVFHV (agg. sum pay / sum fare; clean filters, excl. WAV/AAR/DO 1,264,265): Uber 90.7% (21:00) -> 72.8% (00:00), normal Sep 84.6%; Lyft 72.1% -> 44.5%, normal 72.8%. Old text implied Lyft started at 89% — corrected.
+- Preliminary Evidence now states sample (2021, filters from build_od_weather_cells.py, 171.4M trips / 106.4M cells), the spec-B equation from driver_share_weather_bins.r, and coefs (-0.0827, -0.0738).
+- Body now runs ~1/4 page onto p.6 (over 5-page cap) — flagged to user.
