@@ -57,27 +57,62 @@ Transit competition during surge & Unchanged (demand rose) & Reduced (rider-mark
 \end{singlespace}
 \end{table}
 
+\section{Data and Variables}
+
+All data are in hand; Table~\ref{tab:vars} defines the variables. The NYC High Volume For-Hire Vehicle (HVFHV) trip records, which rideshare companies must legally file with the TLC, report for every Uber, Lyft and Via trip from 2019 to 2026 the request, pickup and dropoff times and taxi zones, distance, duration, the fare paid and driver pay net of commission. Lacking a surge multiplier, we measure surge as fare per mile relative to the zone's non-storm baseline for that hour of the week, and aggregate trips to taxi zone $\times$ hour ($z,t$) and origin--destination pair $\times$ hour. Yellow and green taxi records give the taxi share; NOAA HURDAT2 tracks and radar rainfall time each storm $s$; storm surge (SLOSH, a bathtub elevation model and tide gauges), FEMA floodplains and 311 complaints show where water reached; MTA alerts record each bus and subway delay or closure; and cellphone data measure population present and net outflow by zone and hour.
+
+\begin{table}[h]
+\centering
+\begin{singlespace}
+\footnotesize
+\renewcommand{\arraystretch}{0.9}
+\setlength{\abovecaptionskip}{4pt}
+\begin{tabular}{ll}
+\toprule
+\multicolumn{2}{l}{\textit{Outcomes} ($Y_{z,s,t}$)} \\
+\quad SurgeProxy & Fare per mile / zone's non-storm hour-of-week baseline (HVFHV) \\
+\quad DriverShare, TakeRate & driver\_pay / base\_passenger\_fare; $1 -$ DriverShare (HVFHV) \\
+\quad WaitTime (SupplyProxy) & Pickup time $-$ request time; dispatch delay (HVFHV) \\
+\quad TaxiShare & Taxi trips / (taxi $+$ HVFHV trips) (TLC taxi records) \\
+\midrule
+\multicolumn{2}{l}{\textit{Treatment and timing}} \\
+\quad FloodExposed$_{z,s}$ & Continuous: rainfall, surge depth, floodplain, 311 reports \\
+\quad EventHour$_s$ & Onset of peak rainfall over NYC (HURDAT2, radar) \\
+\quad $X_{z,t}$ & Hourly radar rainfall in the zone \\
+\midrule
+\multicolumn{2}{l}{\textit{Mechanisms}} \\
+\quad DemandProxy & Population present and net outflow vs.\ pre-storm baseline (cellphone) \\
+\quad TransitDisruption & Subway and bus delays and closures in the zone (MTA alerts) \\
+\midrule
+\multicolumn{2}{l}{\textit{Instrument and controls}} \\
+\quad TrackDistance, TrackAngle & Zone distance to storm track; track angle to coastline \\
+\quad Elevation, CoastDistance & Zone elevation; distance to coastline \\
+\bottomrule
+\end{tabular}
+\end{singlespace}
+\caption{Variables used in the empirical strategy.}
+\label{tab:vars}
+\end{table}
+
 \section{Empirical Strategy}
 
-\textbf{Multi-storm stacked event study.} We pool every storm of the HVFHV era (2019--2026), including Isaias, Elsa, Henri and Ida, timed from NOAA HURDAT2 and radar:
+\textbf{Multi-storm stacked event study.} We pool every storm of the HVFHV era (2019--2026), including Isaias, Elsa, Henri and Ida:
 \begin{equation}
 Y_{z,s,t} = \alpha_{z,s} + \gamma_{s,t} + \sum_{k \neq -1} \beta_k \cdot \text{FloodExposed}_{z,s} \times \mathbb{1}[t = \text{EventHour}_s + k] + X_{z,t}\,\delta + \varepsilon_{z,s,t}
 \end{equation}
-The unit is taxi zone $\times$ hour, stacked by storm. FloodExposed is continuous flood exposure from the SLOSH/bathtub layer, radar rainfall and 311 reports; $\beta_k$ traces out the dynamic effect $k$ hours from landfall, and leads capture anticipatory evacuation demand. Outcomes are the surge proxy (fare per mile relative to the zone's non-storm baseline for that hour of the week), take rate, wait time and mode shares. Stacking avoids staggered-adoption bias in two-way fixed effects \citep{cengiz2019,callaway2021} and tests whether pricing algorithms changed across storms.
+The unit is taxi zone $\times$ hour, stacked by storm. $\beta_k$ traces out the dynamic effect $k$ hours from the event hour, and leads capture anticipatory evacuation demand. Outcomes are those listed in Table~\ref{tab:vars}. Stacking avoids staggered-adoption bias in two-way fixed effects \citep{cengiz2019,callaway2021} and tests whether pricing algorithms changed across storms.
 
 \textbf{Triple difference.} A simple DiD cannot separate ``this zone always behaves differently during storms'' from ``this zone is specifically flooded once landfall occurs''; the triple interaction Flooded $\times$ StormPeriod $\times$ PostLandfall isolates the latter.
 
-\textbf{Supply--demand decomposition.} $\text{SurgeProxy} = \beta_1 \cdot \text{DemandProxy} + \beta_2 \cdot \text{SupplyProxy} + \text{FE}$, with cellphone population present and net outflow (normalized to each zone's pre-storm baseline) as demand and dispatch delay (pickup minus request time) as supply. Second-stage test: does surge at $t$ actually raise supply at $t+1$? Within origin--destination pairs, $\log \text{share} = \log \text{pay} - \log \text{fare}$ splits each share effect into fare and pay.
+\textbf{Supply--demand decomposition.} $\text{SurgeProxy} = \beta_1 \cdot \text{DemandProxy} + \beta_2 \cdot \text{SupplyProxy} + \text{FE}$, with the proxies in Table~\ref{tab:vars}. Second-stage test: does surge at $t$ actually raise supply at $t+1$? Within origin--destination pairs, $\log \text{share} = \log \text{pay} - \log \text{fare}$ splits each share effect into fare and pay.
 
 \textbf{Storm-track instrument.} Flooded zones may differ in supply, income or drainage even without a storm, so we instrument flood exposure with the zone's distance from the storm track and the track's angle to the coastline, controlling for elevation, distance to coast and rainfall.
 
 \textbf{Inference and welfare.} Standard errors are clustered by zone, with storm-level wild cluster bootstrap \citep{cameron2008}; storms with and without a governor's emergency declaration (General Business Law \S396-r) are compared. Welfare separates transfers ($\Delta$Fare $\times$ TripVolume, split into $\Delta$DriverPay and $\Delta$PlatformMargin), deadweight loss from unmet demand (a taxi vs.\ HVFHS vs.\ no-trip choice model) and driver risk compensation.
 
-\section{Data and Preliminary Evidence}
+\section{Preliminary Evidence}
 
-All data are in hand. The fare, driver's share of fare, and platform's share of fare from 2019 until 2026 are directly observed in the NYC High Volume For-Hire Vehicle trip records, which rideshare companies are legally required to submit; yellow and green taxi records give the substitution benchmark. Competition from alternative transport is measured with MTA bus and subway alerts recording the time and route of each delay or closure, and cellphone data measure population present by zone and hour. Storm tracks and rainfall come from NOAA and the National Weather Service; storm surge, rainfall, elevation, FEMA floodplain and 311 data give the water level across the city.
-
-\textbf{Preliminary evidence (2021).} In a 106.4-million-cell origin--destination--hour panel (171.4 million trips) merged with radar rainfall, fare and driver pay move one for one in ordinary rain. After more than 50 mm over six hours, fare outpaces pay and the driver share falls 7--8 percentage points. The TLC pay floor bound on about 15\% of Uber and 62\% of Lyft trips in September 2021.
+In a 106.4-million-cell origin--destination--hour panel (171.4 million trips) merged with radar rainfall, fare and driver pay move one for one in ordinary rain. After more than 50 mm over six hours, fare outpaces pay and the driver share falls 7--8 percentage points. The TLC pay floor bound on about 15\% of Uber and 62\% of Lyft trips in September 2021.
 
 \section{Qualifications}
 

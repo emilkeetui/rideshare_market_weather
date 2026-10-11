@@ -45,3 +45,9 @@ https://claude.ai/code/artifact/00d86dd2-4bda-43cb-b4d5-788eb150fa8e
 ## Revision 3 (user): $5.2bn/80,000 drivers restored; saved as Overleaf LaTeX
 - proposal/columbia_postdoc_proposal.tex (standalone, thebibliography + natbib). Compiles with 0 errors/undefined refs; body ends on p.5 (~half page spare), refs on p.6.
 - Statute bibitem removed (natbib author-year needs a year; statute named in text). Not committed.
+
+## Revision 4 (user, 2026-10-11): Data section moved before Empirical Strategy
+- New "3 Data and Variables" (prose + single-spaced Table 1 defining Y outcomes, FloodExposed, EventHour, X, demand/supply proxies, transit disruption, IV + controls); strategy text now refers back to Table 1 instead of defining variables inline.
+- Preliminary evidence split into its own section after the strategy.
+- Assumption flagged to user: X_{z,t} defined as hourly zone rainfall (was undefined). "k hours from landfall" -> "from the event hour" (consistent with Rev. 0 decision).
+- Compiles, 0 errors/overfull; body ends p.5, refs p.6. Not committed.
