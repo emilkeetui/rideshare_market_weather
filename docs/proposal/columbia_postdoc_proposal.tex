@@ -17,7 +17,7 @@
 \doublespacing
 
 \begin{center}
-{\large\bfseries Who Pays When the Streets Flood?}\\[2pt]
+{\large\bfseries Riders on the Storm}\\[2pt]
 {\itshape Platform Market Power and the Incidence of Storms in New York City's Ride-Hail Market, 2019--2026}
 \end{center}
 
@@ -26,36 +26,26 @@
 
 \section{Motivation and Research Question}
 
-Hurricanes and tropical storms are increasing in frequency due to climate change and are a major cost associated with the damages of climate. They are generally harmful in aggregate, but they have an ambiguous and uneven effect on firms and consumers, potentially benefiting some firms. Hurricanes trigger acute, localized scarcity: flooded roads, driver withdrawal, and surging demand to evacuate or reach safety, and ridesharing platforms use surge pricing during exactly these moments. During Hurricane Ida (1 September 2021), fares reached about three times the TLC pay floor, while the driver's share of the fare fell from 89\% to 72\% at Uber and to 45\% at Lyft.
+Hurricanes and tropical storms are increasing in frequency due to climate change and are a major cost associated with the damages of climate. Hurricanes, flood subways and endanger drivers, bikers, and pedestrians. But rideshare platforms and drivers that continue to offer rides can surge prices during these conditions since they face less competition from other modes of transport and drivers and more demand for evacuation. During Hurricane Ida (1 September 2021), fares reached about three times the TLC pay floor. Despite the drivers undertaking all the risk of driving during a hurricane the platforms share of fare increased and driver's share of fare decreased from 89\% to 72\% at Uber and to 45\% at Lyft.
 
-We study how every hurricane and tropical storm that struck New York City from 2019 to 2026 affected ridesharing fares, rides taken, surge pricing, and the distribution of welfare between riders, drivers, and platforms. \textbf{Core question:} Does surge efficiently ration scarce rides and pull in supply, or does it extract rents from riders with no good alternative? Because transactions are spread over a wide temporal and geographic area, we can compare places before and after each storm, and places more and less affected by it. The NYC rideshare market is large in terms of transactions, employment, and value, so understanding it has implications for millions of people: in 2026 it was valued at \$5.2 billion, employed over 80,000 drivers, and facilitated hundreds of thousands of daily trips.
+We study how hurricanes and tropical storms affect ridesharing fares, rides taken, surge pricing, and the distribution of welfare among riders, drivers, and platforms in the New York City ridesharing market from 2019 to 2026. Understanding the impact of hurricanes and tropical storms on the NYC rideshare market is important as extreme weather events are projected to increase in intensity due to climate change and the market facilitates large amounts of transactions and economic value, in 2026 it was valued at \$5.2 billion, employed over 80,000 drivers, and facilitated hundreds of thousands of daily trips.
 
 \section{Related Literature and Theoretical Framing}
 
-Surge pricing reduces wasteful driver search \citep{castillo2017} and raises rider but lowers driver surplus \citep{castillo2025}; rain shifts taxi demand and labor supply \citep{farber2015,brodeur2018}; platforms hold wage-setting power \citep{dube2020}; and hurricane damage is large \citep{kahn2005,hsiang2014,deryugina2017}. But these literatures study routine, reversible imbalances, where riders have time and alternatives, or aggregate, longer-run costs. None study surge pricing when demand is acutely inelastic (life-safety and evacuation trips), supply is physically blocked (flooded, impassable roads), and anti-price-gouging law may be legally activated: the setting where ``surge equals efficient matching'' may invert.
+Surge pricing reduces wasteful driver search \citep{castillo2017} and raises rider but lowers driver surplus \citep{castillo2025}; rain shifts taxi demand and labor supply \citep{farber2015,brodeur2018}; platforms hold wage-setting power \citep{dube2020}; and hurricane damage is large \citep{kahn2005,hsiang2014,deryugina2017}. But these literatures study routine, reversible imbalances, where riders have time and alternatives, or aggregate, longer-run costs. None study surge pricing during extreme weather when demand is acutely inelastic (life-safety and evacuation trips), competition from other forms of transport and other drivers and driver's outside work options are simultaneoulsy affected, and anti-price-gouging law may be legally activated.
 
-We analyze storms through platform market power in the rider market and the driver market. When both markets are competitive, platforms offer drivers a share of fares equal to their opportunity cost of driving. Market power in the rider market lets platforms charge a higher fare; wage-setting power over drivers lets them reduce the driver's share and capture a greater percentage of fare increases. With demand elasticity $\varepsilon_D$, driver supply elasticity $\varepsilon_S$ and platform cost $c$, the driver's share is
+We analyze storms through platform market power in the rider market and the driver market. When both markets are competitive, platforms offer drivers a share of fares equal to their opportunity cost of driving. Market power in the rider market allows platforms to charge a higher fare; wage-setting power over drivers allows them to reduce the driver's share of fare and capture a greater percentage of fare increases. With demand elasticity $\varepsilon_D$, driver supply elasticity $\varepsilon_S$ and platform cost $c$, the driver's share is
 \begin{equation}
-\text{DriverShare} = \frac{\text{driver\_pay}}{\text{base\_passenger\_fare}} = \frac{1 - 1/\varepsilon_D - c/p}{1 + 1/\varepsilon_S}.
+\text{DriverShare} = \frac{\text{driver\_pay}}{\text{base\_passenger\_fare}}.
 \end{equation}
-Hurricanes increase platform power in the rider market if they reduce competition from alternative transport (subway closures, walking becoming more dangerous than driving) or if rideshares are especially suited for evacuations. They reduce drivers' market power if drivers' outside employment options close, and increase it if drivers demand higher wages to accept the risk of driving during a hurricane. Where the TLC pay floor binds, the share falls mechanically as fares rise, so share results use trips with a slack floor. The pass-through elasticity of driver share to surge is the key structural object.
 
-\begin{table}[h]
-\centering
-\begin{singlespace}
-\begin{tabular}{lll}
-\toprule
-Signature & Efficient surge & Platform rent extraction \\
-\midrule
-Driver pay share vs.\ surge & Flat & Falling \\
-Supply response to surge ($t+1$) & Rises & Flat or falls \\
-Wait time vs.\ price & Improves & Unchanged, high price \\
-Mode substitution (taxi share) & Modest & Large, priced out \\
-Transit competition during surge & Unchanged (demand rose) & Reduced (rider-market power) \\
-\bottomrule
-\end{tabular}
-\end{singlespace}
-\end{table}
+Hurricanes increase platform power in the rider market if they reduce competition from alternative transport (subway closures, walking becoming more dangerous than driving) or if rideshares are especially suited for evacuations. They reduce drivers' market power if drivers' outside employment options close, and increase it if drivers demand higher wages to accept the risk of driving during a hurricane. 
+
+During a hurricane the pass-through elasticity of the driver's pay and the surge is
+
+\begin{equation}
+\frac{\partial \text{driver\_pay\_share}}{\partial \text{surge}}.
+\end{equation}
 
 \section{Data and Variables}
 
@@ -96,7 +86,7 @@ All data are in hand; Table~\ref{tab:vars} defines the variables. The NYC High V
 
 \section{Empirical Strategy}
 
-\textbf{Multi-storm stacked event study.} We pool every storm of the HVFHV era (2019--2026), including Isaias, Elsa, Henri and Ida:
+\textbf{Multi-storm stacked event study.} We pool every tropical storm and hurricane between 2019--2026:
 \begin{equation}
 Y_{z,s,t} = \alpha_{z,s} + \gamma_{s,t} + \sum_{k \neq -1} \beta_k \cdot \text{FloodExposed}_{z,s} \times \mathbb{1}[t = \text{EventHour}_s + k] + X_{z,t}\,\delta + \varepsilon_{z,s,t}
 \end{equation}
