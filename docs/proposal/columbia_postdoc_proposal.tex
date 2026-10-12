@@ -45,13 +45,13 @@ We analyze hurricanes through platform market power in the rider market and the 
 
 Hurricanes increase platform power in the rider market if they reduce competition from alternative transport (subway closures, walking becoming more dangerous than driving) or if rideshares are especially suited for evacuations compared to other forms of transport. The firms can raise prices higher if they have market power and the demand for rides is more inelastic, as would be the case if riders were desperate to use rides for evacuation. Hurricanes reduce drivers' market power if drivers' outside employment options close, and increase it if drivers demand higher wages to accept the risk of driving during a hurricane. 
 
-To assess driver's return on price surges we measure the pass-through elasticity of the driver's pay and the surge during hurricanes and outside hurricanes
+To assess drivers' returns from price surges, we estimate the pass-through elasticity of driver pay with respect to the fare, during and outside hurricanes:
 
 \begin{equation}
-\frac{\partial \text{driver\_pay\_share}}{\partial \text{surge}}.
+\varepsilon = \frac{\partial \ln \text{driver\_pay}}{\partial \ln \text{base\_passenger\_fare}}.
 \end{equation}
 
-The sign and magnitude of the pass-through elasticity of the driver's pay and surge measure what share of surge charges drivers receive. If the pass-through is elastic the drivers receive a greater share of surge increases. If the pass-through is inelastic the drivers receive a smaller share of surge increases. If the pass-through is unit-elastic the drivers' share of pass-through does not change with surges.
+Because $\text{DriverShare} = \text{driver\_pay}/\text{base\_passenger\_fare}$, $\partial \ln \text{DriverShare} / \partial \ln \text{base\_passenger\_fare} = \varepsilon - 1$. If pass-through is elastic ($\varepsilon > 1$), driver pay rises proportionally more than the fare, so drivers' share of the fare rises with surges. If it is inelastic ($\varepsilon < 1$), drivers' share falls and the platform captures a disproportionate part of the surge. If it is unit-elastic ($\varepsilon = 1$), drivers' share of the fare does not change with surges.
 
 \section{Data and Variables}
 
